@@ -48,9 +48,10 @@ export class PolymarketMCPClient {
     });
 
     // Create transport and client
-    this.transport = new StreamableHTTPClientTransport(this.serverUrl);
+  // StreamableHTTPClientTransport expects a URL object
+  this.transport = new StreamableHTTPClientTransport(new URL(this.serverUrl));
     this.client = new Client({
-      name: 'Polyseer MCP Client',
+      name: 'Omnisense MCP Client',
       version: '1.0.0',
     }, {
       capabilities: {},
@@ -107,21 +108,15 @@ export class PolymarketMCPClient {
       console.log('✅ [MCP Tool Result]', result);
 
       // Parse the result
-      if (result.content && result.content.length > 0) {
-        const content = result.content[0];
-        if (content.type === 'text') {
+      const contentArray: any = (result as any).content;
+      if (Array.isArray(contentArray) && contentArray.length > 0) {
+        const content = contentArray[0];
+        if (content.type === 'text' && typeof content.text === 'string') {
           try {
             const data = JSON.parse(content.text);
-            return {
-              success: true,
-              data,
-            };
-          } catch (e) {
-            // If not JSON, return raw text
-            return {
-              success: true,
-              data: content.text as any,
-            };
+            return { success: true, data };
+          } catch {
+            return { success: true, data: content.text as any };
           }
         }
       }

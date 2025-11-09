@@ -82,7 +82,7 @@ export async function POST(req: NextRequest) {
 
 export async function GET() {
   return NextResponse.json({
-    message: 'Polyseer Chat API',
+    message: 'Omnisense Chat API',
     description: 'Conversational interface for Polymarket discovery and analysis',
     endpoints: {
       POST: {

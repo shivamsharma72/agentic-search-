@@ -136,26 +136,15 @@ function AnalysisContent() {
   const isHistoricalView = !!historyId;
 
   const extractIdentifier = useCallback((url: string) => {
-    // Try Polymarket first
     const polymarketMatch = url.match(/polymarket\.com\/event\/([^/?]+)/);
     if (polymarketMatch) return polymarketMatch[1];
-
-    // Try Kalshi full path (with ticker)
-    const kalshiFullMatch = url.match(
-      /kalshi\.com\/markets\/[^/]+\/[^/]+\/([A-Z0-9-]+)/i
-    );
-    if (kalshiFullMatch) return kalshiFullMatch[1];
-
-    // Try Kalshi series path
-    const kalshiSeriesMatch = url.match(/kalshi\.com\/markets\/([a-z0-9-]+)/i);
-    if (kalshiSeriesMatch) return kalshiSeriesMatch[1];
-
+    const legacyMatch = url.match(/polymarket\.com\/markets\/([^/?]+)/);
+    if (legacyMatch) return legacyMatch[1];
     return null;
   }, []);
 
   const detectPlatform = useCallback((url: string) => {
     if (url.includes("polymarket.com")) return "Polymarket";
-    if (url.includes("kalshi.com")) return "Kalshi";
     return "Unknown";
   }, []);
 
@@ -395,7 +384,6 @@ function AnalysisContent() {
   const getPlatformFromUrl = useCallback((url?: string | null) => {
     if (!url) return "Unknown";
     if (url.includes("polymarket.com")) return "Polymarket";
-    if (url.includes("kalshi.com")) return "Kalshi";
     return "Unknown";
   }, []);
 
@@ -1391,15 +1379,7 @@ function AnalysisContent() {
                             className="rounded"
                           />
                         )}
-                        {getPlatformFromUrl(url) === "Kalshi" && (
-                          <Image
-                            src="/kalshi.png"
-                            alt="Kalshi"
-                            width={20}
-                            height={20}
-                            className="rounded"
-                          />
-                        )}
+                        {/* Additional platform support removed for streamlined Polymarket-only deployment */}
                         Place Bet
                         <ExternalLink className="w-4 h-4" />
                       </Button>

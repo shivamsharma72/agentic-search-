@@ -1,14 +1,14 @@
-# Polyseer - See the Future.
+# Omnisense - See the Future.
 
-> *Everyone wishes they could go back and buy Bitcoin at $1. Polyseer brings the future to you, so you never have to wonder "what if?" again.*
+> *Everyone wishes they could go back and buy Bitcoin at $1. Omnisense brings the future to you, so you never have to wonder "what if?" again.*
 
-**⚠️ NOT FINANCIAL ADVICE** | Polyseer provides analysis for entertainment and research purposes only. Always DYOR.
+**⚠️ NOT FINANCIAL ADVICE** | Omnisense provides analysis for entertainment and research purposes only. Always DYOR.
 
 ## Tldr;
 
 ```bash
-git clone https://github.com/yorkeccak/polyseer.git
-cd polyseer
+git clone https://github.com/yorkeccak/omnisense.git
+cd omnisense
 npm install
 
 # Create .env.local with:
@@ -18,15 +18,15 @@ npm install
 npm run dev
 ```
 
-Open [localhost:3000](http://localhost:3000), paste any **Polymarket or Kalshi** URL, and get your analysis. No signup required in development mode.
+Open [localhost:3000](http://localhost:3000), paste any **Polymarket** URL, and get your analysis. No signup required in development mode.
 
-Or, we have a hosted version [here](https://www.polyseer.xyz)
+Or, we have a hosted version [here](https://www.omnisense.xyz)
 
-## What is Polyseer?
+## What is Omnisense?
 
-Prediction markets tell you what might happen. Polyseer tells you why.
+Prediction markets tell you what might happen. Omnisense tells you why.
 
-Drop in any **Polymarket or Kalshi** URL and get a structured analysis that breaks down the actual factors driving an outcome. Instead of gut feelings or surface-level takes, you get systematic research across academic papers, news, market data, and expert analysis.
+Drop in any **Polymarket** URL and get a structured analysis that breaks down the actual factors driving an outcome. Instead of gut feelings or surface-level takes, you get systematic research across academic papers, news, market data, and expert analysis.
 
 The system uses multiple AI agents to research both sides of a question, then aggregates the evidence using Bayesian probability math. Think of it as having a research team that can read thousands of sources in minutes and give you the key insights.
 
@@ -43,16 +43,14 @@ Built for developers, researchers, and anyone who wants rigorous analysis instea
 
 ## 🏗️ Architecture Overview
 
-Polyseer is built on a **multi-agent AI architecture** that orchestrates specialized agents to conduct deep analysis. Here's how the magic happens:
+Omnisense is built on a **multi-agent AI architecture** that orchestrates specialized agents to conduct deep analysis. Here's how the magic happens:
 
 ```mermaid
 graph TD
     A[User Input: Market URL] --> B[Platform Detector]
-    B --> C{Polymarket or Kalshi?}
-    C -->|Polymarket| D[Polymarket API Client]
-    C -->|Kalshi| E[Kalshi API Client]
-    D --> F[Unified Market Data]
-    E --> F
+  B --> C{Polymarket?}
+  C -->|Yes| D[Polymarket API Client]
+  D --> F[Unified Market Data]
     B --> C[Orchestrator]
     C --> D[Planner Agent]
     D --> E[Research Agents]
@@ -116,7 +114,7 @@ sequenceDiagram
 
 ### Valyu Integration
 
-Polyseer leverages [Valyu's search network](https://valyu.network) to access:
+Omnisense leverages [Valyu's search network](https://valyu.network) to access:
 
 - **🎓 Academic Papers**: Real-time research publications
 - **🌐 Web Intelligence**: Fresh news and analysis  
@@ -163,7 +161,7 @@ Each piece of evidence is rigorously classified:
 
 ### Bayesian Probability Aggregation
 
-Polyseer uses sophisticated mathematical models to combine evidence:
+Omnisense uses sophisticated mathematical models to combine evidence:
 
 ```mermaid
 graph TD
@@ -242,8 +240,8 @@ Each piece of evidence receives an influence score based on:
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/your-org/polyseer.git
-cd polyseer
+git clone https://github.com/your-org/omnisense.git
+cd omnisense
 ```
 
 ### 2. Install Dependencies
@@ -355,7 +353,7 @@ CREATE TABLE analysis_sessions (
 
 ### 5. Choose Your Mode
 
-Polyseer supports two deployment modes:
+Omnisense supports two deployment modes:
 
 #### 🔧 **Development Mode** (Default)
 Perfect for developers, researchers, and personal use:
@@ -508,7 +506,7 @@ We welcome contributions! Here's how to get started:
 ## ⚖️ Legal & Disclaimers
 
 ### Important Notice
-**⚠️ NOT FINANCIAL ADVICE**: Polyseer provides analysis for entertainment and research purposes only. All predictions are probabilistic and should not be used as the sole basis for financial decisions.
+**⚠️ NOT FINANCIAL ADVICE**: Omnisense provides analysis for entertainment and research purposes only. All predictions are probabilistic and should not be used as the sole basis for financial decisions.
 
 ### Terms of Service
 - **🔒 Privacy Policy**: We respect your privacy
@@ -534,16 +532,16 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 - **💳 Polar**: Billing and subscriptions
 ---
 
-**Ready to see the future? Start analyzing markets at [polyseer.xyz](https://polyseer.xyz) 🔮**
+**Ready to see the future? Start analyzing markets at [omnisense.xyz](https://omnisense.xyz) 🔮**
 
 *Remember: The future belongs to those who can see it coming. Don't miss out again.*
 
 ---
 
 <div align="center">
-  <img src="public/polyseer.svg" alt="Polyseer" width="200"/>
+  <img src="public/omnisense.svg" alt="Omnisense" width="200"/>
   
   **See the Future. Don't Miss Out.**
   
-  [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fpolyseer%2Fpolyseer)
+  [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fomnisense%2Fomnisense)
 </div>

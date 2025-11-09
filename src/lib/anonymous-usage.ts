@@ -1,6 +1,6 @@
 import { cookies } from 'next/headers'
 
-const ANONYMOUS_USAGE_COOKIE = 'polyseer_anonymous_usage'
+const ANONYMOUS_USAGE_COOKIE = 'omnisense_anonymous_usage'
 const MAX_ANONYMOUS_QUERIES = 2
 
 interface AnonymousUsage {
