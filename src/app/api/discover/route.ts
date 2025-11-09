@@ -8,6 +8,7 @@ import {
 
 // Use Node.js runtime for MCP SDK compatibility
 export const runtime = "nodejs";
+export const maxDuration = 10; // Vercel Hobby tier limit
 
 /**
  * Discovery API - Hybrid MCP + Polymarket API

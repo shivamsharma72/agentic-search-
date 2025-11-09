@@ -93,7 +93,7 @@ export default function HeroSection({
               transition={{ delay: 0.9 }}
               className="text-white/60 text-sm"
             >
-              💡 Try: "AI markets" or paste a Polymarket URL
+              💡 Try: &ldquo;AI markets&rdquo; or paste a Polymarket URL
             </motion.p>
           </motion.div>
         </motion.div>

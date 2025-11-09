@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+export const maxDuration = 10; // Vercel Hobby tier limit
+
 export async function POST(req: NextRequest) {
   try {
     const { report, filename, format } = await req.json();

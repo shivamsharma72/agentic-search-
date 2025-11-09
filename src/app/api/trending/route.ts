@@ -4,6 +4,7 @@ import { listEvents, eventToAppMarket } from "@/lib/polymarket/client";
 
 // Switch to Node.js runtime for MCP SDK compatibility
 export const runtime = "nodejs";
+export const maxDuration = 10; // Vercel Hobby tier limit
 
 /**
  * Trending Markets API - Hybrid MCP + Polymarket API

@@ -194,9 +194,9 @@ export async function publicSearch(
     
     console.log(`✅ [Polymarket API] Returning ${results.events.length} events with ${results.markets.length} markets`);
     console.log(`📊 [Polymarket API] Event status breakdown:`, {
-      active: results.events.filter(e => e.active === true).length,
-      closed: results.events.filter(e => e.closed === true).length,
-      neither: results.events.filter(e => e.active === null && e.closed === null).length,
+      active: results.events.filter((e: Event) => e.active === true).length,
+      closed: results.events.filter((e: Event) => e.closed === true).length,
+      neither: results.events.filter((e: Event) => e.active === null && e.closed === null).length,
     });
     
     return results;

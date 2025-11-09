@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 // Hackathon Mode: No database, return static featured markets
 
+export const maxDuration = 10; // Vercel Hobby tier limit
+
 export interface FeaturedMarket {
   id: number;
   slug: string;

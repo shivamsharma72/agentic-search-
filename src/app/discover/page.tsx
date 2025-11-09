@@ -127,7 +127,7 @@ function DiscoverContent() {
           </Link>
           <div className="text-center flex-1">
             <h1 className="text-2xl md:text-3xl font-bold text-white">
-              🔍 "{query}"
+              🔍 &ldquo;{query}&rdquo;
             </h1>
             <p className="text-white/60 text-sm mt-1">
               {markets.length > 0
@@ -299,7 +299,7 @@ function DiscoverContent() {
           </div>
         ) : (
           <div className="text-center py-12">
-            <p className="text-white/60">No markets found for "{query}"</p>
+            <p className="text-white/60">No markets found for &ldquo;{query}&rdquo;</p>
             <p className="text-white/40 text-sm mt-2">
               Try a different search term
             </p>

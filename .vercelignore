@@ -1,0 +1,38 @@
+# Vercel Ignore - Reduce deployment size
+
+# Development files
+*.md
+!README.md
+.env.local.example
+.git
+.gitignore
+
+# Test and script files
+scripts/
+mcp-test/
+
+# Output directories (already in .gitignore but explicit here)
+outputs/
+RoboNeo-*
+
+# Documentation
+docs/
+*.log
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Test files
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+**/*.spec.tsx
+
+# Source maps in production
+*.map
+
+# Large demo files
+public/demo/

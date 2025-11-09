@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { runUnifiedForecastPipeline } from '@/lib/agents/orchestrator';
 import { parseMarketUrl, isValidMarketUrl } from '@/lib/tools/market-url-parser';
 
-export const maxDuration = 800;
+// Vercel Hobby tier allows max 10 seconds for serverless functions
+export const maxDuration = 10;
 
 export async function POST(req: NextRequest) {
   // Hackathon Mode: No authentication, no rate limits

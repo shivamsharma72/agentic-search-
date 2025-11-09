@@ -3,6 +3,7 @@ import { anthropic } from "@ai-sdk/anthropic";
 import { generateText } from "ai";
 
 export const runtime = "nodejs";
+export const maxDuration = 10; // Vercel Hobby tier limit
 
 /**
  * Report Chat API
@@ -42,7 +43,6 @@ Answer the user's questions based ONLY on the information in this report. Be con
           content: question,
         },
       ],
-      maxTokens: 500,
     });
 
     console.log("✅ [Report Chat] Answer generated");

@@ -146,9 +146,9 @@ export default function ReportChat({ report, marketTitle, alpha }: ReportChatPro
         <div className="text-center text-white/40 text-sm py-4">
           <p>Try asking:</p>
           <ul className="mt-2 space-y-1">
-            <li>"What are the key risks?"</li>
-            <li>"Summarize the main findings"</li>
-            <li>"What influenced this prediction?"</li>
+            <li>&ldquo;What are the key risks?&rdquo;</li>
+            <li>&ldquo;Summarize the main findings&rdquo;</li>
+            <li>&ldquo;What influenced this prediction?&rdquo;</li>
           </ul>
         </div>
       )}

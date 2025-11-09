@@ -1,5 +1,4 @@
 import { aggregateNeutral, blendMarket } from '../forecasting/aggregator';
-import { Evidence } from '../forecasting/types';
 import { evidenceLogLR, TYPE_CAPS } from '../forecasting/evidence';
 import { clamp } from '../forecasting/math';
 import { generateText, generateObject } from 'ai';
@@ -9,8 +8,6 @@ import {
   ForecastCard,
 } from '../forecasting/types';
 import { anthropic } from '@ai-sdk/anthropic';
-import { aggregateProbabilities } from '../forecasting/aggregator';
-import { classifyEvidence } from '../forecasting/evidence';
 import { getPolarTrackedModel } from '../polar-llm-strategy';
 
 // Get model dynamically to use current context

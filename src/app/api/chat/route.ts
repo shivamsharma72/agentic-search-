@@ -3,6 +3,7 @@ import { getMCPClient } from '@/lib/mcp/client';
 
 // Switch to Node runtime for MCP SDK compatibility
 export const runtime = 'nodejs';
+export const maxDuration = 10; // Vercel Hobby tier limit
 
 /**
  * Chat API Route - With Streaming Support
