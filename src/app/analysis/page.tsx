@@ -170,7 +170,7 @@ function AnalysisContent() {
   const toggleStepExpanded = useCallback((stepId: string) => {
     setSteps((prev) =>
       prev.map((step) =>
-        step.id === stepId ? { ...step, expanded: !step.expanded } : step
+      step.id === stepId ? { ...step, expanded: !step.expanded } : step
       )
     );
   }, []);
@@ -178,7 +178,7 @@ function AnalysisContent() {
   const fetchHistoricalAnalysis = useCallback(async () => {
     // Hackathon Mode: No historical analysis (requires database)
     setError("Historical analysis not available in hackathon mode");
-    setIsLoadingHistory(false);
+      setIsLoadingHistory(false);
   }, [historyId]);
 
   const startAnalysis = useCallback(() => {
@@ -217,77 +217,77 @@ function AnalysisContent() {
       }),
     })
       .then(async (response) => {
-        if (!response.ok) {
-          // Try to get the error message from the response body
-          let errorMessage = `HTTP error! status: ${response.status}`;
-
-          try {
-            const responseText = await response.text();
-
-            if (responseText) {
-              try {
-                const errorData = JSON.parse(responseText);
-                errorMessage = errorData.error || errorMessage;
-              } catch (jsonError) {
-                // If it's not JSON, maybe it's plain text
-                errorMessage = responseText || errorMessage;
-              }
+      if (!response.ok) {
+        // Try to get the error message from the response body
+        let errorMessage = `HTTP error! status: ${response.status}`;
+        
+        try {
+          const responseText = await response.text();
+          
+          if (responseText) {
+            try {
+              const errorData = JSON.parse(responseText);
+              errorMessage = errorData.error || errorMessage;
+            } catch (jsonError) {
+              // If it's not JSON, maybe it's plain text
+              errorMessage = responseText || errorMessage;
             }
-          } catch (readError) {
-            // Keep the default errorMessage
           }
-
-          // Check if this is a rate limit error - handle it gracefully without console error
+        } catch (readError) {
+          // Keep the default errorMessage
+        }
+        
+        // Check if this is a rate limit error - handle it gracefully without console error
           const isRateLimitError =
             errorMessage.includes("Daily limit exceeded") ||
             errorMessage.includes("limited to 1 free analysis");
-
-          if (isRateLimitError) {
-            // Set error state directly without throwing to avoid console error
-            setError(errorMessage);
-            return; // Exit early, don't throw
-          }
-
-          throw new Error(errorMessage);
+        
+        if (isRateLimitError) {
+          // Set error state directly without throwing to avoid console error
+          setError(errorMessage);
+          return; // Exit early, don't throw
         }
-
-        const reader = response.body?.getReader();
-        if (!reader) {
+        
+        throw new Error(errorMessage);
+      }
+      
+      const reader = response.body?.getReader();
+      if (!reader) {
           throw new Error("No response body");
-        }
+      }
 
-        const decoder = new TextDecoder();
+      const decoder = new TextDecoder();
         let buffer = "";
 
-        try {
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
 
-            buffer += decoder.decode(value, { stream: true });
+          buffer += decoder.decode(value, { stream: true });
             const lines = buffer.split("\n");
             buffer = lines.pop() || "";
 
-            for (const line of lines) {
+          for (const line of lines) {
               if (line.trim() === "") continue;
               if (line.startsWith("data: ")) {
-                try {
-                  const data: ProgressEvent = JSON.parse(line.slice(6));
-                  handleProgressEvent(data);
-                } catch (e) {
+              try {
+                const data: ProgressEvent = JSON.parse(line.slice(6));
+                handleProgressEvent(data);
+              } catch (e) {
                   console.error("Error parsing SSE data:", e, line);
-                }
               }
             }
           }
-        } finally {
-          reader.releaseLock();
         }
-      })
+      } finally {
+        reader.releaseLock();
+      }
+    })
       .catch((err) => {
         console.error("Analysis failed:", err);
         setError(err.message || "Analysis failed");
-      });
+    });
   }, [url, extractIdentifier, detectPlatform]);
 
   const handleProgressEvent = useCallback((event: ProgressEvent) => {
@@ -295,7 +295,7 @@ function AnalysisContent() {
 
     if (event.type === "error") {
       setError(event.error || "Unknown error occurred");
-
+      
       // Track analysis errors
       if (typeof window !== "undefined") {
         import("@vercel/analytics").then(({ track }) => {
@@ -317,7 +317,7 @@ function AnalysisContent() {
       setSteps((prev) =>
         prev.map((step) => ({ ...step, status: "complete" as const }))
       );
-
+      
       // Track report completion event
       if (typeof window !== "undefined" && event.forecast) {
         import("@vercel/analytics").then(({ track }) => {
@@ -342,7 +342,7 @@ function AnalysisContent() {
 
       setSteps((prev) => {
         const existingIndex = prev.findIndex((s) => s.id === event.step);
-
+        
         if (existingIndex >= 0) {
           // Update existing step - if it has response data, mark as complete
           const updated = [...prev];
@@ -361,12 +361,12 @@ function AnalysisContent() {
           return updated;
         } else {
           // Mark previous step as complete when starting a new one
-          const updated = prev.map((step, index) =>
+          const updated = prev.map((step, index) => 
             index === prev.length - 1 && step.status === "running"
               ? { ...step, status: "complete" as const }
               : step
           );
-
+          
           // Add new step
           const newStep: AnalysisStep = {
             id: event.step!,
@@ -378,7 +378,7 @@ function AnalysisContent() {
             timestamp: event.timestamp,
             expanded: false,
           };
-
+          
           return [...updated, newStep];
         }
       });
@@ -485,7 +485,7 @@ function AnalysisContent() {
       "Signed-in users get 2 free analyses per day"
     );
     const isRateLimitError = isAnonymousRateLimit || isSignedInRateLimit;
-
+    
     if (isRateLimitError) {
       // Track rate limit hit
       if (typeof window !== "undefined") {
@@ -496,7 +496,7 @@ function AnalysisContent() {
           });
         });
       }
-
+      
       return (
         <div className="min-h-screen bg-black text-white p-4 relative overflow-hidden">
           {/* Video Background */}
@@ -513,7 +513,7 @@ function AnalysisContent() {
             {/* Dark overlay for better text readability */}
             <div className="absolute inset-0 bg-black/40"></div>
           </div>
-
+          
           {/* Content overlay */}
           <div className="relative z-50 flex items-center justify-center min-h-screen">
             <motion.div
@@ -532,7 +532,7 @@ function AnalysisContent() {
                     <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-4">
                       <AlertCircle className="w-6 h-6 text-white" />
                     </div>
-
+                    
                     {/* Title */}
                     <h1 className="text-2xl md:text-3xl font-bold text-white mb-3 font-[family-name:var(--font-space)]">
                       You&apos;ve Used Your Free Analyses
@@ -541,7 +541,7 @@ function AnalysisContent() {
                       Upgrade to pay-per-use for unlimited access
                     </p>
                   </div>
-
+                  
                   {/* Pay Per Use Focus */}
                   <div className="max-w-md mx-auto mb-6">
                     <div className="bg-gradient-to-br from-green-500/20 to-emerald-500/20 backdrop-blur-sm border border-green-300/30 rounded-2xl p-6 text-center">
@@ -569,7 +569,7 @@ function AnalysisContent() {
                         <li>✓ Transparent pricing</li>
                         <li>✓ Start analyzing immediately</li>
                       </ul>
-                      <Button
+                      <Button 
                         onClick={() => router.push("/?plan=payperuse")}
                         size="lg"
                         className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold border-0"
@@ -578,14 +578,14 @@ function AnalysisContent() {
                       </Button>
                     </div>
                   </div>
-
+                  
                   {/* Action Buttons */}
                   <div className="bg-white/20 backdrop-blur-sm border border-white/30 rounded-2xl p-4 max-w-md mx-auto">
                     <div className="text-center">
                       <p className="text-white/60 text-sm mb-3">
                         Your free analysis resets daily at midnight
                       </p>
-                      <Button
+                      <Button 
                         onClick={() => router.push("/")}
                         variant="outline"
                         size="sm"
@@ -605,7 +605,7 @@ function AnalysisContent() {
                     <div className="w-12 h-12 bg-white/20 backdrop-blur-sm border border-white/30 rounded-full flex items-center justify-center mx-auto mb-4">
                       <AlertCircle className="w-6 h-6 text-white" />
                     </div>
-
+                    
                     {/* Title */}
                     <h1 className="text-2xl md:text-3xl font-bold text-white mb-3 font-[family-name:var(--font-space)]">
                       Daily Limit Reached
@@ -614,7 +614,7 @@ function AnalysisContent() {
                       Choose your plan to continue analyzing markets
                     </p>
                   </div>
-
+                  
                   {/* Pricing Plans */}
                   <div className="grid md:grid-cols-2 gap-4 mb-6 max-w-2xl mx-auto">
                     {/* Pay Per Use */}
@@ -643,7 +643,7 @@ function AnalysisContent() {
                         <li>✓ Transparent pricing</li>
                       </ul>
                     </div>
-
+                    
                     {/* Subscription */}
                     <div className="bg-gradient-to-br from-purple-500/30 to-blue-500/30 backdrop-blur-sm border border-purple-300/50 rounded-2xl p-6 text-center hover:from-purple-500/40 hover:to-blue-500/40 transition-all cursor-pointer relative">
                       <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-purple-500 to-blue-500 text-white text-xs px-3 py-1 rounded-full font-semibold">
@@ -670,27 +670,27 @@ function AnalysisContent() {
                       </ul>
                     </div>
                   </div>
-
+                  
                   {/* Action Buttons */}
                   <div className="bg-white/20 backdrop-blur-sm border border-white/30 rounded-2xl p-4 max-w-2xl mx-auto">
                     <div className="flex flex-col sm:flex-row gap-3 justify-center mb-3">
-                      <Button
+                      <Button 
                         onClick={() => router.push("/?plan=subscription")}
                         size="default"
                         className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-6 py-2 font-semibold border-0"
                       >
                         Start Unlimited Plan
                       </Button>
-                      <Button
+                      <Button 
                         onClick={() => router.push("/?plan=payperuse")}
-                        variant="outline"
+                        variant="outline" 
                         size="default"
                         className="border-white/30 bg-white/10 backdrop-blur-sm text-white hover:bg-white/20 px-6 py-2"
                       >
                         Pay Per Analysis
                       </Button>
                     </div>
-
+                    
                     {/* Reset Info */}
                     <p className="text-white/60 text-xs text-center">
                       Free analysis resets daily at midnight •{" "}
@@ -706,13 +706,13 @@ function AnalysisContent() {
               )}
             </motion.div>
           </div>
-
+          
           {/* Bottom fade overlay */}
           <div className="fixed bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-black via-black/50 to-transparent pointer-events-none z-40"></div>
         </div>
       );
     }
-
+    
     // Default error state for other errors
     return (
       <div className="min-h-screen bg-black flex items-center justify-center p-4">
@@ -751,7 +751,7 @@ function AnalysisContent() {
         {/* Dark overlay for better text readability */}
         <div className="absolute inset-0 bg-black/40"></div>
       </div>
-
+      
       {/* Content overlay */}
       <div className="relative z-50 max-w-4xl mx-auto pt-24">
         {/* Header Section */}
@@ -780,7 +780,7 @@ function AnalysisContent() {
               </div>
             )}
           </div>
-
+          
           {isHistoricalView && historicalAnalysis && (
             <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
@@ -808,7 +808,7 @@ function AnalysisContent() {
             </div>
           )}
         </div>
-
+        
         {/* Anonymous User Banner - Hidden in Hackathon Mode */}
         {false && !isHistoricalView && (
           <motion.div
@@ -883,7 +883,7 @@ function AnalysisContent() {
         <div className="relative mb-12">
           {/* Timeline Line */}
           <div className="absolute left-8 top-0 bottom-0 w-px bg-gradient-to-b from-blue-500/40 via-purple-500/40 to-green-500/40"></div>
-
+          
           <div className="space-y-8">
             <AnimatePresence>
               {steps.map((step, index) => (
@@ -892,8 +892,8 @@ function AnalysisContent() {
                   initial={{ opacity: 0, x: -20, scale: 0.9 }}
                   animate={{ opacity: 1, x: 0, scale: 1 }}
                   exit={{ opacity: 0, x: 20, scale: 0.9 }}
-                  transition={{
-                    duration: 0.4,
+                  transition={{ 
+                    duration: 0.4, 
                     delay: index * 0.08,
                     ease: "easeOut",
                   }}
@@ -916,7 +916,7 @@ function AnalysisContent() {
                     `}
                     ></div>
                   </div>
-
+                  
                   {/* Step Card */}
                   <div className="ml-16">
                     <Card
@@ -933,8 +933,8 @@ function AnalysisContent() {
                       }
                     `}
                     >
-                      <CardHeader
-                        className="pb-3"
+                      <CardHeader 
+                        className="pb-3" 
                         onClick={() => toggleStepExpanded(step.id)}
                       >
                         <div className="flex items-center justify-between">
@@ -966,7 +966,7 @@ function AnalysisContent() {
                             {step.status === "pending" && (
                               <div className="w-5 h-5 border-2 border-white/20 rounded-full animate-pulse"></div>
                             )}
-
+                            
                             <div>
                               {["initial_data", "complete_data_ready"].includes(
                                 step.id
@@ -1025,14 +1025,14 @@ function AnalysisContent() {
                               )}
                             </div>
                           </div>
-
+                          
                           <div className="flex items-center gap-3">
                             <motion.div
                               initial={{ scale: 0 }}
                               animate={{ scale: 1 }}
                               transition={{ duration: 0.2, delay: 0.2 }}
                             >
-                              <Badge
+                              <Badge 
                                 variant="outline"
                                 className={`
                                   px-3 py-1 text-xs font-medium border transition-all duration-200
@@ -1050,96 +1050,96 @@ function AnalysisContent() {
                                 {step.status === "running" && "●"} {step.status}
                               </Badge>
                             </motion.div>
-
+                            
                             {step.details &&
                               Object.keys(step.details).length > 0 && (
-                                <motion.div
-                                  whileHover={{ scale: 1.1 }}
-                                  whileTap={{ scale: 0.9 }}
-                                >
+                              <motion.div
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.9 }}
+                              >
                                   {step.expanded ? (
                                     <ChevronDown className="w-4 h-4 text-white/40" />
                                   ) : (
-                                    <ChevronRight className="w-4 h-4 text-white/40" />
+                                  <ChevronRight className="w-4 h-4 text-white/40" />
                                   )}
-                                </motion.div>
-                              )}
+                              </motion.div>
+                            )}
                           </div>
                         </div>
                       </CardHeader>
-
+                      
                       <AnimatePresence>
                         {["initial_data", "complete_data_ready"].includes(
                           step.id
                         )
                           ? step.details && (
-                              <motion.div
-                                initial={{ height: 0, opacity: 0 }}
+                            <motion.div
+                              initial={{ height: 0, opacity: 0 }}
                                 animate={{ height: "auto", opacity: 1 }}
-                                exit={{ height: 0, opacity: 0 }}
+                              exit={{ height: 0, opacity: 0 }}
                                 transition={{
                                   duration: 0.3,
                                   ease: "easeInOut",
                                 }}
-                              >
-                                <CardContent className="pt-0 pb-6">
-                                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-white/80 text-sm">
+                            >
+                              <CardContent className="pt-0 pb-6">
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-white/80 text-sm">
                                     {typeof step.details.outcomes ===
                                       "number" && (
-                                      <div>
+                                    <div>
                                         <div className="text-white/60">
                                           Outcomes
                                         </div>
                                         <div className="font-semibold">
                                           {step.details.outcomes}
                                         </div>
-                                      </div>
-                                    )}
-                                    {step.details.interval && (
-                                      <div>
+                                    </div>
+                                  )}
+                                  {step.details.interval && (
+                                    <div>
                                         <div className="text-white/60">
                                           Interval
                                         </div>
                                         <div className="font-semibold">
                                           {step.details.interval}
                                         </div>
-                                      </div>
-                                    )}
+                                    </div>
+                                  )}
                                     {typeof step.details.historySeries ===
                                       "number" && (
-                                      <div>
+                                    <div>
                                         <div className="text-white/60">
                                           History Series
                                         </div>
                                         <div className="font-semibold">
                                           {step.details.historySeries}
                                         </div>
-                                      </div>
-                                    )}
+                                    </div>
+                                  )}
                                     {typeof step.details.volume ===
                                       "number" && (
-                                      <div>
+                                    <div>
                                         <div className="text-white/60">
                                           Volume
                                         </div>
                                         <div className="font-semibold">
                                           {step.details.volume.toLocaleString()}
                                         </div>
-                                      </div>
-                                    )}
+                                    </div>
+                                  )}
                                     {typeof step.details.liquidity ===
                                       "number" && (
-                                      <div>
+                                    <div>
                                         <div className="text-white/60">
                                           Liquidity
                                         </div>
                                         <div className="font-semibold">
                                           {step.details.liquidity.toLocaleString()}
                                         </div>
-                                      </div>
-                                    )}
-                                    {step.details.closeTime && (
-                                      <div>
+                                    </div>
+                                  )}
+                                  {step.details.closeTime && (
+                                    <div>
                                         <div className="text-white/60">
                                           Close Time
                                         </div>
@@ -1148,27 +1148,27 @@ function AnalysisContent() {
                                             step.details.closeTime
                                           ).toLocaleString()}
                                         </div>
-                                      </div>
-                                    )}
-                                    {step.details.resolutionSource && (
-                                      <div className="col-span-2">
+                                    </div>
+                                  )}
+                                  {step.details.resolutionSource && (
+                                    <div className="col-span-2">
                                         <div className="text-white/60">
                                           Resolution Source
                                         </div>
                                         <div className="font-semibold truncate">
                                           {step.details.resolutionSource}
                                         </div>
-                                      </div>
-                                    )}
-                                  </div>
+                                    </div>
+                                  )}
+                                </div>
 
                                   {Array.isArray(step.details.pricesNow) &&
                                     step.details.pricesNow.length > 0 && (
-                                      <div className="mt-4">
+                                  <div className="mt-4">
                                         <div className="text-white/60 text-sm mb-2">
                                           Top of Book
                                         </div>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                                           {step.details.pricesNow.map(
                                             (p: any, idx: number) => (
                                               <div
@@ -1183,22 +1183,22 @@ function AnalysisContent() {
                                                   {p.ask ?? "-"} | mid{" "}
                                                   {p.mid ?? "-"}
                                                 </span>
-                                              </div>
+                                        </div>
                                             )
                                           )}
-                                        </div>
-                                      </div>
-                                    )}
+                                    </div>
+                                  </div>
+                                )}
                                   {step.details?.eventSummary
                                     ?.isMultiCandidate &&
                                     Array.isArray(
                                       step.details.eventSummary.topCandidates
                                     ) && (
-                                      <div className="mt-4">
+                                  <div className="mt-4">
                                         <div className="text-white/60 text-sm mb-2">
                                           Top Candidates
                                         </div>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                                           {step.details.eventSummary.topCandidates.map(
                                             (c: any, idx: number) => (
                                               <div
@@ -1208,7 +1208,7 @@ function AnalysisContent() {
                                                 <span className="truncate mr-2">
                                                   {c.name}
                                                 </span>
-                                                <span className="font-mono">
+                                          <span className="font-mono">
                                                   {c.implied_probability != null
                                                     ? `${(
                                                         c.implied_probability *
@@ -1222,13 +1222,13 @@ function AnalysisContent() {
                                                   "number"
                                                     ? ` | liq $${c.liquidity.toLocaleString()}`
                                                     : ""}
-                                                </span>
-                                              </div>
+                                          </span>
+                                        </div>
                                             )
                                           )}
-                                        </div>
-                                      </div>
-                                    )}
+                                    </div>
+                                  </div>
+                                )}
 
                                   {typeof step.details.withBooks !==
                                     "undefined" && (
@@ -1238,7 +1238,7 @@ function AnalysisContent() {
                                         {String(step.details.withBooks)}
                                       </span>
                                     </div>
-                                  )}
+                                )}
                                   {typeof step.details.withTrades !==
                                     "undefined" && (
                                     <div className="text-white/80 text-sm">
@@ -1247,31 +1247,31 @@ function AnalysisContent() {
                                         {String(step.details.withTrades)}
                                       </span>
                                     </div>
-                                  )}
-                                </CardContent>
-                              </motion.div>
-                            )
+                                )}
+                              </CardContent>
+                            </motion.div>
+                          )
                           : step.expanded &&
                             step.details &&
                             Object.keys(step.details).length > 0 && (
-                              <motion.div
-                                initial={{ height: 0, opacity: 0 }}
+                            <motion.div
+                              initial={{ height: 0, opacity: 0 }}
                                 animate={{ height: "auto", opacity: 1 }}
-                                exit={{ height: 0, opacity: 0 }}
+                              exit={{ height: 0, opacity: 0 }}
                                 transition={{
                                   duration: 0.3,
                                   ease: "easeInOut",
                                 }}
-                              >
-                                <CardContent className="pt-0 pb-6">
-                                  <div className="bg-black/50 rounded-lg p-6 border border-white/10">
-                                    <pre className="whitespace-pre-wrap text-white/80 text-xs leading-relaxed font-mono overflow-x-auto max-h-96 overflow-y-auto">
-                                      {JSON.stringify(step.details, null, 2)}
-                                    </pre>
-                                  </div>
-                                </CardContent>
-                              </motion.div>
-                            )}
+                            >
+                              <CardContent className="pt-0 pb-6">
+                                <div className="bg-black/50 rounded-lg p-6 border border-white/10">
+                                  <pre className="whitespace-pre-wrap text-white/80 text-xs leading-relaxed font-mono overflow-x-auto max-h-96 overflow-y-auto">
+                                    {JSON.stringify(step.details, null, 2)}
+                                  </pre>
+                                </div>
+                              </CardContent>
+                            </motion.div>
+                        )}
                       </AnimatePresence>
                     </Card>
                   </div>
@@ -1309,7 +1309,7 @@ function AnalysisContent() {
                     </div>
                   )}
                 </CardHeader>
-
+                
                 <CardContent>
                   <div className="grid md:grid-cols-2 gap-6 min-w-0">
                     <div>
@@ -1341,16 +1341,16 @@ function AnalysisContent() {
                         </div>
                       </div>
                     </div>
-
+                    
                     <div className="min-w-0">
                       <h3 className="text-lg font-semibold text-white mb-4">
                         Analysis Drivers
                       </h3>
                       <div className="flex flex-wrap gap-2">
                         {forecast.drivers.map((driver, i) => (
-                          <Badge
-                            key={i}
-                            variant="outline"
+                          <Badge 
+                            key={i} 
+                            variant="outline" 
                             className="border-white/20 text-white/80 text-xs leading-tight whitespace-normal break-words max-w-full"
                             title={driver}
                           >
@@ -1362,7 +1362,7 @@ function AnalysisContent() {
                       </div>
                     </div>
                   </div>
-
+                  
                   <div className="mt-6 pt-6 border-t border-white/10">
                     <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
                       <div className="text-center sm:text-left">
@@ -1376,7 +1376,7 @@ function AnalysisContent() {
                           %
                         </p>
                       </div>
-
+                      
                       <Button
                         onClick={openMarketBet}
                         className="bg-purple-600 hover:bg-purple-700 text-white flex items-center gap-2"
@@ -1407,7 +1407,7 @@ function AnalysisContent() {
                   </div>
                 </CardContent>
               </Card>
-
+              
               {forecast.markdownReport && (
                 <Card className="relative z-10 backdrop-blur-md mt-6 bg-black/70 border-white/30">
                   <CardHeader>
@@ -1512,25 +1512,25 @@ function AnalysisContent() {
                         <ol className="space-y-2 text-sm list-decimal list-inside">
                           {Array.from(new Set(forecast.provenance)).map(
                             (url, idx) => {
-                              let label = url;
-                              try {
-                                const u = new URL(url);
+                            let label = url;
+                            try {
+                              const u = new URL(url);
                                 label = `${u.hostname.replace(/^www\./, "")}${
                                   u.pathname
                                 }`;
-                              } catch {}
-                              return (
-                                <li key={idx} className="text-white/80">
+                            } catch {}
+                            return (
+                              <li key={idx} className="text-white/80">
                                   <a
                                     href={url}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="underline hover:text-white"
                                   >
-                                    {label}
-                                  </a>
-                                </li>
-                              );
+                                  {label}
+                                </a>
+                              </li>
+                            );
                             }
                           )}
                         </ol>
@@ -1542,7 +1542,7 @@ function AnalysisContent() {
             </motion.div>
           )}
         </AnimatePresence>
-
+        
         {!isComplete && steps.length === 0 && (
           <div className="text-center">
             <motion.div
@@ -1554,7 +1554,7 @@ function AnalysisContent() {
           </div>
         )}
       </div>
-
+      
       {/* Bottom fade overlay */}
       <div className="fixed bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-black via-black/50 to-transparent pointer-events-none z-40"></div>
     </div>
@@ -1563,7 +1563,7 @@ function AnalysisContent() {
 
 export default function AnalysisPage() {
   return (
-    <Suspense
+    <Suspense 
       fallback={
         <div className="min-h-screen bg-black flex items-center justify-center">
           <motion.div

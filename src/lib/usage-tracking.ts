@@ -27,7 +27,7 @@ export async function trackValyuUsageImmediate(
 ) {
   // Hackathon mode: No-op
   console.log('[Hackathon] Valyu usage:', { cost, query, searchType });
-}
+  }
 
 // No-op functions for compatibility
 export async function checkUsageLimit(userId: string) {

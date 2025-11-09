@@ -39,5 +39,5 @@ export function getPolarTrackedModel(modelName: string = 'claude-sonnet-4-5') {
   const baseModel = anthropic(claudeModelName);
   
   console.log(`[Hackathon] Mapped ${modelName} -> ${claudeModelName}`);
-  return baseModel;
-}
+    return baseModel;
+  }

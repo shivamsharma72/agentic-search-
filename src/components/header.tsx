@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
@@ -25,20 +24,15 @@ export default function Header() {
 
       <div className='relative w-full px-2 md:px-4'>
         <div className='flex h-14 items-center justify-between'>
+          {/* Empty left side - ready for your new logo */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, delay: 0.3, ease: 'easeOut' }}
           >
             <Link href='/' className='inline-block pt-2'>
-              <Image
-                src='/polyseer.svg'
-                alt='Polyseer'
-                width={200}
-                height={80}
-                className='h-24 md:h-24 w-auto drop-shadow-md'
-                priority
-              />
+              {/* Add your new logo here */}
+              <span className="text-2xl font-bold text-white">Your Logo</span>
             </Link>
           </motion.div>
 
@@ -56,16 +50,14 @@ export default function Header() {
             </motion.div>
           )}
 
+          {/* Empty right side - cleaned up */}
           <motion.nav
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, delay: 0.4, ease: 'easeOut' }}
             className='flex items-center gap-0.5 md:gap-1'
           >
-            {/* Hackathon Mode - No authentication UI */}
-            <div className="text-white/80 text-sm font-medium bg-purple-500/20 px-3 py-1.5 rounded-md border border-white/20">
-              🚀 Hackathon Mode
-            </div>
+            {/* Ready for any future nav items */}
           </motion.nav>
         </div>
       </div>

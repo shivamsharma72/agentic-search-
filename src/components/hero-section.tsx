@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, Sparkles } from "lucide-react";
+import { ArrowRight, Sparkles, MessageCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import ZoomTransition from "@/components/zoom-transition";
 import Image from "next/image";
@@ -178,8 +178,19 @@ export default function HeroSection({ onAnalyze, isAnalyzing, onShowHowItWorks, 
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 1.3, ease: "easeOut" }}
-              className="flex justify-center mt-4"
+              className="flex flex-col items-center gap-3 mt-4"
             >
+              {/* Chat Mode Button */}
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => router.push('/chat')}
+                className="bg-white/10 border-white/20 text-white hover:bg-white/20 hover:border-white/30 backdrop-blur-sm"
+              >
+                <MessageCircle className="w-4 h-4 mr-2" />
+                Try AI Chat Mode
+              </Button>
+
               <div className="relative flex items-center gap-2 bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/30">
                 <span className="text-sm text-white/80 font-medium">Powered by</span>
                 <a

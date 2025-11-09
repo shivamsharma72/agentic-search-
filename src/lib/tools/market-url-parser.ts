@@ -87,7 +87,7 @@ export function parseMarketUrl(url: string): ParsedMarketUrl {
     };
   }
 
-  return parsePolymarketUrl(url);
+    return parsePolymarketUrl(url);
 }
 
 /**

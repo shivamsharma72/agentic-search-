@@ -77,11 +77,11 @@ export async function fetchMarketDataFromUrl(
   console.log(`📊 Fetching ${parsed.platform} market data for: ${parsed.identifier}`);
 
   // Fetch data from Polymarket
-  const data = await buildLLMPayloadFromSlug(parsed.identifier, options);
-  return {
-    platform: 'polymarket',
-    ...data,
-  };
+    const data = await buildLLMPayloadFromSlug(parsed.identifier, options);
+    return {
+      platform: 'polymarket',
+      ...data,
+    };
 }
 
 /**
@@ -99,11 +99,11 @@ export async function fetchMarketDataByIdentifier(
     throw new Error(`Unsupported platform: ${platform}`);
   }
 
-  const data = await buildLLMPayloadFromSlug(identifier, options);
-  return {
-    platform: 'polymarket',
-    ...data,
-  };
+    const data = await buildLLMPayloadFromSlug(identifier, options);
+    return {
+      platform: 'polymarket',
+      ...data,
+    };
 }
 
 /**

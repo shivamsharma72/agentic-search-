@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import HeroSection from "@/components/hero-section";
-import HighestROI from "@/components/highest-roi";
+import TrendingMarkets from "@/components/trending-markets";
 import ResultPanel from "@/components/result-panel";
 import ShareModal from "@/components/share-modal";
 import TelegramBotModal from "@/components/telegram-bot-modal";
@@ -52,8 +52,8 @@ export default function Home() {
   // Skip loading screen if already initialized
   useEffect(() => {
     // Skip loading screen in hackathon mode
-    setIsLoading(false);
-    setContentVisible(true);
+      setIsLoading(false);
+      setContentVisible(true);
   }, []);
 
   return (
@@ -86,13 +86,7 @@ export default function Home() {
           />
         )}
 
-        <HighestROI onAnalyze={(url) => {
-          setMarketUrl(url);
-          // Small delay to let URL populate, then submit
-          setTimeout(() => {
-            handleAnalyze(url);
-          }, 100);
-        }} />
+        <TrendingMarkets />
       </motion.div>
 
       <ShareModal
