@@ -37,10 +37,9 @@ export default function HeroSection({ onAnalyze, isAnalyzing, onShowHowItWorks, 
   };
 
   const validateMarketUrl = (url: string) => {
-    // Support both Polymarket and Kalshi URLs
+    // Support Polymarket URLs
     const polymarketRegex = /^https?:\/\/(www\.)?polymarket\.com\/.+/i;
-    const kalshiRegex = /^https?:\/\/(www\.)?kalshi\.com\/markets\/.+/i;
-    return polymarketRegex.test(url) || kalshiRegex.test(url);
+    return polymarketRegex.test(url);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -48,12 +47,12 @@ export default function HeroSection({ onAnalyze, isAnalyzing, onShowHowItWorks, 
     setError("");
 
     if (!url) {
-      setError("Please enter a Polymarket or Kalshi URL");
+      setError("Please enter a Polymarket URL");
       return;
     }
 
     if (!validateMarketUrl(url)) {
-      setError("Please enter a valid Polymarket or Kalshi market URL");
+      setError("Please enter a valid Polymarket market URL");
       return;
     }
 
@@ -128,7 +127,7 @@ export default function HeroSection({ onAnalyze, isAnalyzing, onShowHowItWorks, 
               >
                 <Input
                   type="url"
-                  placeholder="Paste Polymarket or Kalshi URL... Or click one of the trending markets below 👇"
+                  placeholder="Paste Polymarket URL... Or click one of the trending markets below 👇"
                   value={url}
                   onChange={(e) => handleUrlChange(e.target.value)}
                   className={`h-12 md:h-14 text-base px-4 md:px-6 bg-white/95 backdrop-blur-sm border-white/20 focus:bg-white focus:border-white/40 placeholder:text-neutral-500 w-full ${

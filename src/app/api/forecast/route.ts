@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
     let identifier: string;
 
     if (marketUrl) {
-      // New unified approach - supports both Polymarket and Kalshi URLs
+      // Polymarket URL support
       if (typeof marketUrl !== 'string' || !marketUrl) {
         return NextResponse.json(
           { error: 'marketUrl must be a non-empty string' },
@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
       if (!isValidMarketUrl(marketUrl)) {
         const parsed = parseMarketUrl(marketUrl);
         return NextResponse.json(
-          { error: parsed.error || 'Invalid market URL. Only Polymarket and Kalshi URLs are supported.' },
+          { error: parsed.error || 'Invalid market URL. Only Polymarket URLs are supported.' },
           { status: 400 }
         );
       }
@@ -98,7 +98,7 @@ export async function POST(req: NextRequest) {
             }, 'progress');
           };
 
-          // Run unified forecasting pipeline with progress tracking (auto-detects platform)
+          // Run forecasting pipeline with progress tracking
           const forecastCard = await runUnifiedForecastPipeline({
             marketUrl: finalMarketUrl,
             drivers,
@@ -157,11 +157,11 @@ export async function POST(req: NextRequest) {
 
 export async function GET() {
   return NextResponse.json({
-    message: 'Unified Multi-Platform Forecasting API',
-    description: 'AI-powered forecasting using GPT-5 agents - works with Polymarket and Kalshi',
+    message: 'Polymarket Forecasting API',
+    description: 'AI-powered forecasting using Claude Sonnet 4.5 agents - Polymarket prediction markets',
     usage: 'POST with { marketUrl: string, drivers?: string[], historyInterval?: string, withBooks?: boolean, withTrades?: boolean }',
     parameters: {
-      marketUrl: 'Required. Full market URL (Polymarket or Kalshi). Platform is auto-detected.',
+      marketUrl: 'Required. Full Polymarket URL.',
       polymarketSlug: 'Deprecated. Use marketUrl instead. Still supported for backward compatibility.',
       drivers: 'Optional. Key factors to focus analysis on. Auto-generated if not provided.',
       historyInterval: 'Optional. Price history granularity ("1h", "4h", "1d", "1w"). Auto-optimized if not provided.',
@@ -173,23 +173,15 @@ export async function GET() {
         name: 'Polymarket',
         urlFormat: 'https://polymarket.com/event/{slug}',
         example: 'https://polymarket.com/event/will-trump-win-2024'
-      },
-      kalshi: {
-        name: 'Kalshi',
-        urlFormat: 'https://kalshi.com/markets/{series}/{category}/{ticker}',
-        example: 'https://kalshi.com/markets/kxtime/times-person-of-the-year/KXTIME-25'
       }
     },
     autoGeneration: {
-      drivers: 'System automatically analyzes the market question and generates relevant drivers using GPT-5',
+      drivers: 'System automatically analyzes the market question and generates relevant drivers using Claude',
       historyInterval: 'System selects optimal interval based on market volume, time until close, and volatility'
     },
     examples: {
-      polymarket: {
+      simple: {
         marketUrl: 'https://polymarket.com/event/will-ai-achieve-agi-by-2030'
-      },
-      kalshi: {
-        marketUrl: 'https://kalshi.com/markets/kxgovshut/government-shutdown/kxgovshut-25oct01'
       },
       withCustomization: {
         marketUrl: 'https://polymarket.com/event/will-trump-win-2024',

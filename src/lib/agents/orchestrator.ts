@@ -24,7 +24,7 @@ export interface PolymarketOrchestratorOpts {
 }
 
 export interface UnifiedOrchestratorOpts {
-  marketUrl: string;                            // Market URL (Polymarket or Kalshi)
+  marketUrl: string;                            // Polymarket URL
   rhoByCluster?: Record<string, number>;
   drivers?: string[];
   historyInterval?: string;                     // e.g., '1d', '4h', '1h'

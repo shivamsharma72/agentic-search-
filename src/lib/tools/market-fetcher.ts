@@ -1,13 +1,12 @@
 /**
  * Unified Market Data Fetcher
- * Abstracts market data fetching across different prediction market platforms
+ * Abstracts market data fetching for Polymarket
  */
 
 import { buildLLMPayloadFromSlug } from './polymarket';
-import { buildLLMPayloadFromKalshiTicker } from './kalshi';
 import { parseMarketUrl, MarketPlatform } from './market-url-parser';
 
-// Re-export common types (these are identical across both implementations)
+// Re-export common types
 export type { MarketPlatform };
 
 export interface MarketFetchOptions {
@@ -24,10 +23,6 @@ export interface MarketSummary {
   volume?: number;
   liquidity?: number;
   token_map: { [outcome: string]: string };
-  ticker?: string;
-  event_ticker?: string;
-  category?: string;
-  rules?: string;
   condition_id?: string; // Polymarket-specific
 }
 
@@ -65,7 +60,7 @@ export interface MarketPayload {
 }
 
 /**
- * Fetch market data from any supported platform using URL
+ * Fetch market data from Polymarket using URL
  * This is the main entry point for getting market data
  */
 export async function fetchMarketDataFromUrl(
@@ -81,29 +76,17 @@ export async function fetchMarketDataFromUrl(
 
   console.log(`📊 Fetching ${parsed.platform} market data for: ${parsed.identifier}`);
 
-  // Fetch data based on platform
-  if (parsed.platform === 'polymarket') {
-    const data = await buildLLMPayloadFromSlug(parsed.identifier, options);
-    return {
-      platform: 'polymarket',
-      ...data,
-    };
-  }
-
-  if (parsed.platform === 'kalshi') {
-    const data = await buildLLMPayloadFromKalshiTicker(parsed.identifier, options);
-    return {
-      platform: 'kalshi',
-      ...data,
-    };
-  }
-
-  throw new Error(`Unsupported platform: ${parsed.platform}`);
+  // Fetch data from Polymarket
+  const data = await buildLLMPayloadFromSlug(parsed.identifier, options);
+  return {
+    platform: 'polymarket',
+    ...data,
+  };
 }
 
 /**
  * Fetch market data using direct identifier (bypasses URL parsing)
- * Useful when you already know the platform and identifier
+ * Useful when you already know the identifier/slug
  */
 export async function fetchMarketDataByIdentifier(
   platform: MarketPlatform,
@@ -112,23 +95,15 @@ export async function fetchMarketDataByIdentifier(
 ): Promise<MarketPayload> {
   console.log(`📊 Fetching ${platform} market data for: ${identifier}`);
 
-  if (platform === 'polymarket') {
-    const data = await buildLLMPayloadFromSlug(identifier, options);
-    return {
-      platform: 'polymarket',
-      ...data,
-    };
+  if (platform !== 'polymarket') {
+    throw new Error(`Unsupported platform: ${platform}`);
   }
 
-  if (platform === 'kalshi') {
-    const data = await buildLLMPayloadFromKalshiTicker(identifier, options);
-    return {
-      platform: 'kalshi',
-      ...data,
-    };
-  }
-
-  throw new Error(`Unsupported platform: ${platform}`);
+  const data = await buildLLMPayloadFromSlug(identifier, options);
+  return {
+    platform: 'polymarket',
+    ...data,
+  };
 }
 
 /**
@@ -137,12 +112,6 @@ export async function fetchMarketDataByIdentifier(
 export function buildMarketUrl(platform: MarketPlatform, identifier: string): string {
   if (platform === 'polymarket') {
     return `https://polymarket.com/event/${identifier}`;
-  }
-
-  if (platform === 'kalshi') {
-    // For Kalshi, we can't reconstruct the full URL without the series and category
-    // Just return the ticker page format
-    return `https://kalshi.com/markets/${identifier.toLowerCase()}`;
   }
 
   throw new Error(`Unsupported platform: ${platform}`);
