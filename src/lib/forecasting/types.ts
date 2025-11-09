@@ -51,5 +51,6 @@ export interface ForecastCard {
   clusters: ClusterMeta[];
   audit: Record<string, unknown>;
   provenance: string[];
-  markdownReport: string;
+  markdownReport: string; // Concise hackathon-friendly report
+  detailedReport?: string; // Optional detailed technical report
 }

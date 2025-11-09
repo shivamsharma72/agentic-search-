@@ -72,20 +72,20 @@ export default function TrendingMarkets() {
     async function fetchTrending() {
       try {
         setIsLoading(true);
-        console.log('🔄 [Trending] Fetching markets from MCP...');
-        
-        const response = await fetch('/api/trending');
+        console.log("🔄 [Trending] Fetching markets from MCP...");
+
+        const response = await fetch("/api/trending");
         const data = await response.json();
 
         if (data.success && data.markets && data.markets.length > 0) {
-          console.log('✅ [Trending] Fetched markets:', data.markets);
+          console.log("✅ [Trending] Fetched markets:", data.markets);
           setMarkets(data.markets);
         } else {
-          console.log('⚠️ [Trending] No markets from API, using fallback');
+          console.log("⚠️ [Trending] No markets from API, using fallback");
           setMarkets(fallbackMarkets);
         }
       } catch (error) {
-        console.error('❌ [Trending] Error fetching markets:', error);
+        console.error("❌ [Trending] Error fetching markets:", error);
         setMarkets(fallbackMarkets);
       } finally {
         setIsLoading(false);
@@ -101,7 +101,8 @@ export default function TrendingMarkets() {
     return `$${volume}`;
   };
 
-  const getYesPercentage = (prices: Record<string, number>) => {
+  const getYesPercentage = (prices?: Record<string, number>) => {
+    if (!prices) return 0;
     const yesPrice = prices.Yes || prices.yes || 0;
     return Math.round(yesPrice * 100);
   };
@@ -158,7 +159,7 @@ export default function TrendingMarkets() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 max-w-7xl mx-auto">
           {markets.map((market, index) => {
             const yesPercent = getYesPercentage(market.currentPrices);
-            
+
             return (
               <motion.a
                 key={market.id}

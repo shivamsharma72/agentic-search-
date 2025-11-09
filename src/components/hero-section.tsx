@@ -1,220 +1,106 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, Sparkles, MessageCircle } from "lucide-react";
+import { useState } from "react";
+import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
-import ZoomTransition from "@/components/zoom-transition";
 import Image from "next/image";
+import ZoomTransition from "@/components/zoom-transition";
+import UnifiedInput from "@/components/unified-input";
 
 interface HeroSectionProps {
   onAnalyze: (url: string) => void;
   isAnalyzing: boolean;
   onShowHowItWorks: () => void;
-  polymarketUrl?: string; // Add prop for URL population
-  setPolymarketUrl?: (url: string) => void; // Add prop for URL setting
+  polymarketUrl?: string;
+  setPolymarketUrl?: (url: string) => void;
 }
 
-export default function HeroSection({ onAnalyze, isAnalyzing, onShowHowItWorks, polymarketUrl, setPolymarketUrl }: HeroSectionProps) {
-  const [url, setUrl] = useState("");
-  const [error, setError] = useState("");
+export default function HeroSection({
+  onAnalyze,
+  isAnalyzing,
+}: HeroSectionProps) {
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [targetUrl, setTargetUrl] = useState("");
   const router = useRouter();
 
-  // Sync with external URL prop
-  useEffect(() => {
-    if (polymarketUrl && polymarketUrl !== url) {
-      setUrl(polymarketUrl);
-    }
-  }, [polymarketUrl]);
-
-  const handleUrlChange = (newUrl: string) => {
-    setUrl(newUrl);
-    setPolymarketUrl?.(newUrl);
-    setError("");
-  };
-
-  const validateMarketUrl = (url: string) => {
-    // Support Polymarket URLs
-    const polymarketRegex = /^https?:\/\/(www\.)?polymarket\.com\/.+/i;
-    return polymarketRegex.test(url);
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-
-    if (!url) {
-      setError("Please enter a Polymarket URL");
-      return;
-    }
-
-    if (!validateMarketUrl(url)) {
-      setError("Please enter a valid Polymarket market URL");
-      return;
-    }
-
-    // Trigger zoom transition
+  const handleAnalyze = (url: string) => {
+    setTargetUrl(url);
     setIsTransitioning(true);
   };
 
   const handleTransitionComplete = () => {
-    // Navigate to analysis page
-    router.push(`/analysis?url=${encodeURIComponent(url)}`);
-  };
-
-  const handleTrySample = () => {
-    const sampleUrl = "https://polymarket.com/event/bitcoin-100k-2024";
-    setUrl(sampleUrl);
-    // Small delay to let URL populate, then trigger transition
-    setTimeout(() => {
-      setIsTransitioning(true);
-    }, 100);
+    if (targetUrl) {
+      router.push(`/analysis?url=${encodeURIComponent(targetUrl)}`);
+    }
   };
 
   return (
-    <section className="relative flex-shrink-0 flex items-center justify-center px-4 pt-24 md:pt-32 md:pb-6">
+    <section className="relative flex-shrink-0 flex items-center justify-center px-4 pt-20 pb-4">
       <div className="container max-w-5xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1, delay: 0.5, ease: [0.215, 0.61, 0.355, 1] }}
+          transition={{
+            duration: 1,
+            delay: 0.5,
+            ease: [0.215, 0.61, 0.355, 1],
+          }}
           className="text-center space-y-8"
         >
-          <div className="space-y-6">
-            <motion.h1
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 1, delay: 0.7, ease: [0.215, 0.61, 0.355, 1] }}
-              className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold tracking-tight font-[family-name:var(--font-space)]"
-            >
-              <span className="text-white drop-shadow-lg">
-                See the future.
-              </span>
-            </motion.h1>
+          {/* Large Logo Above Input */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{
+              duration: 1,
+              delay: 0.3,
+              ease: [0.215, 0.61, 0.355, 1],
+            }}
+            className="flex flex-col items-center gap-4 mb-8"
+          >
+            <Image
+              src="/logo-icon.png"
+              alt="Polymarket Analysis"
+              width={200}
+              height={200}
+              className="h-32 md:h-40 w-auto"
+              priority
+            />
+            <h1 className="text-5xl md:text-6xl font-bold text-white tracking-tight">
+              OmniSense
+            </h1>
+          </motion.div>
 
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 1, delay: 0.9, ease: "easeOut" }}
-              className="flex justify-center"
-            >
-              <div className="bg-white/20 backdrop-blur-sm px-3 py-1 rounded-2xl border border-white/30 max-w-2xl">
-                <p className="text-lg md:text-xl text-white/90 leading-relaxed text-center">
-                  In hindsight, we all would&apos;ve bought Bitcoin. 
-                  <br className="hidden sm:block" />
-                  Seer into the future, so you can retire off the next one.
-                </p>
-              </div>
-            </motion.div>
-          </div>
-
-          <motion.form
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1, delay: 1.1, ease: [0.215, 0.61, 0.355, 1] }}
-            onSubmit={handleSubmit}
+            transition={{
+              duration: 1,
+              delay: 0.7,
+              ease: [0.215, 0.61, 0.355, 1],
+            }}
             className="space-y-4 max-w-2xl mx-auto"
           >
-            <div className="relative flex gap-2 transition-all duration-300">
-              <motion.div 
-                className="relative"
-                initial={{ width: "100%" }}
-                animate={{ width: url ? "75%" : "100%" }}
-                transition={{ duration: 0.3, ease: "easeInOut" }}
-              >
-                <Input
-                  type="url"
-                  placeholder="Paste Polymarket URL... Or click one of the trending markets below 👇"
-                  value={url}
-                  onChange={(e) => handleUrlChange(e.target.value)}
-                  className={`h-12 md:h-14 text-base px-4 md:px-6 bg-white/95 backdrop-blur-sm border-white/20 focus:bg-white focus:border-white/40 placeholder:text-neutral-500 w-full ${
-                    error ? "border-red-500 animate-shake" : ""
-                  }`}
-                  disabled={isAnalyzing}
-                />
-                {error && (
-                  <motion.p
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="absolute -bottom-6 left-0 text-sm text-red-400 drop-shadow-md"
-                  >
-                    {error}
-                  </motion.p>
-                )}
-              </motion.div>
-              
-              <AnimatePresence>
-                {url && (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.8, width: 0 }}
-                    animate={{ opacity: 1, scale: 1, width: "15%" }}
-                    exit={{ opacity: 0, scale: 0.8, width: 0 }}
-                    transition={{ duration: 0.3, ease: "easeInOut" }}
-                  >
-                    <Button
-                      type="submit"
-                      size="lg"
-                      disabled={isAnalyzing || isTransitioning}
-                      className="h-12 md:h-14 w-full bg-black text-white hover:bg-black/90 transition-all font-medium"
-                    >
-                      {isAnalyzing || isTransitioning ? (
-                        <span className="flex items-center gap-2">
-                          <Sparkles className="h-4 w-4 animate-pulse" />
-                        </span>
-                      ) : (
-                        <ArrowRight className="h-5 w-5 md:h-6 md:w-6" />
-                      )}
-                    </Button>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
+            <UnifiedInput
+              onAnalyze={handleAnalyze}
+              isLoading={isAnalyzing || isTransitioning}
+              placeholder="Paste a Polymarket URL or ask a question..."
+            />
 
-            {/* Powered by Valyu pill - below input */}
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 1.3, ease: "easeOut" }}
-              className="flex flex-col items-center gap-3 mt-4"
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.9 }}
+              className="text-white/60 text-sm"
             >
-              {/* Chat Mode Button */}
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => router.push('/chat')}
-                className="bg-white/10 border-white/20 text-white hover:bg-white/20 hover:border-white/30 backdrop-blur-sm"
-              >
-                <MessageCircle className="w-4 h-4 mr-2" />
-                Try AI Chat Mode
-              </Button>
-
-              <div className="relative flex items-center gap-2 bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/30">
-                <span className="text-sm text-white/80 font-medium">Powered by</span>
-                <a
-                  href="https://valyu.network"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center hover:scale-105 transition-transform pt-0.5"
-                >
-                  <Image
-                    src="/valyu.svg"
-                    alt="Valyu"
-                    width={80}
-                    height={80}
-                    className="h-4 w-auto opacity-80 hover:opacity-100 transition-opacity"
-                  />
-                </a>
-              </div>
-            </motion.div>
-          </motion.form>
+              💡 Try: "AI markets" or paste a Polymarket URL
+            </motion.p>
+          </motion.div>
         </motion.div>
       </div>
-      
-      <ZoomTransition 
-        isActive={isTransitioning} 
+
+      <ZoomTransition
+        isActive={isTransitioning}
         onComplete={handleTransitionComplete}
       />
     </section>

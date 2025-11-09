@@ -19,6 +19,7 @@ const spaceGrotesk = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://polyseer.xyz'),
   title: "Polyseer | See the future.",
   description: "AI-powered deep research for prediction markets. Paste any Polymarket or Kalshi URL and get an analyst-grade research report in seconds.",
   keywords: ["polymarket", "kalshi", "prediction markets", "AI deep research", "forecasting", "analysis"],

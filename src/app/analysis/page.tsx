@@ -13,11 +13,17 @@ import {
   CheckCircle,
   Clock,
   AlertCircle,
+  MessageCircle,
+  Download,
+  FileText,
 } from "lucide-react";
 import Image from "next/image";
 import { ForecastCard } from "@/lib/forecasting/types";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import type { Components } from "react-markdown";
+import { CustomBackground } from "@/components/ui/custom-background";
+import ReportChat from "@/components/report-chat";
 
 interface ProgressEvent {
   type: "connected" | "progress" | "complete" | "error";
@@ -131,9 +137,42 @@ function AnalysisContent() {
   const [error, setError] = useState<string | null>(null);
   const [historicalAnalysis, setHistoricalAnalysis] = useState<any>(null);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [showDetailedReport, setShowDetailedReport] = useState(false);
 
   // Determine if this is a historical view
   const isHistoricalView = !!historyId;
+
+  const downloadReport = useCallback(
+    async (format: "markdown" | "txt", detailed: boolean = false) => {
+      if (!forecast) return;
+
+      const reportContent =
+        detailed && forecast.detailedReport
+          ? forecast.detailedReport
+          : forecast.markdownReport;
+
+      const reportType = detailed ? "detailed" : "concise";
+      const slug = forecast.question
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .slice(0, 50);
+      const filename = `polyseer-${slug}-${reportType}`;
+
+      // Create a blob and download it directly (client-side)
+      const blob = new Blob([reportContent], {
+        type: format === "markdown" ? "text/markdown" : "text/plain",
+      });
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      link.download = `${filename}.${format === "markdown" ? "md" : "txt"}`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(downloadUrl);
+    },
+    [forecast]
+  );
 
   const extractIdentifier = useCallback((url: string) => {
     // Try Polymarket first
@@ -170,7 +209,7 @@ function AnalysisContent() {
   const toggleStepExpanded = useCallback((stepId: string) => {
     setSteps((prev) =>
       prev.map((step) =>
-      step.id === stepId ? { ...step, expanded: !step.expanded } : step
+        step.id === stepId ? { ...step, expanded: !step.expanded } : step
       )
     );
   }, []);
@@ -178,7 +217,7 @@ function AnalysisContent() {
   const fetchHistoricalAnalysis = useCallback(async () => {
     // Hackathon Mode: No historical analysis (requires database)
     setError("Historical analysis not available in hackathon mode");
-      setIsLoadingHistory(false);
+    setIsLoadingHistory(false);
   }, [historyId]);
 
   const startAnalysis = useCallback(() => {
@@ -217,77 +256,77 @@ function AnalysisContent() {
       }),
     })
       .then(async (response) => {
-      if (!response.ok) {
-        // Try to get the error message from the response body
-        let errorMessage = `HTTP error! status: ${response.status}`;
-        
-        try {
-          const responseText = await response.text();
-          
-          if (responseText) {
-            try {
-              const errorData = JSON.parse(responseText);
-              errorMessage = errorData.error || errorMessage;
-            } catch (jsonError) {
-              // If it's not JSON, maybe it's plain text
-              errorMessage = responseText || errorMessage;
+        if (!response.ok) {
+          // Try to get the error message from the response body
+          let errorMessage = `HTTP error! status: ${response.status}`;
+
+          try {
+            const responseText = await response.text();
+
+            if (responseText) {
+              try {
+                const errorData = JSON.parse(responseText);
+                errorMessage = errorData.error || errorMessage;
+              } catch (jsonError) {
+                // If it's not JSON, maybe it's plain text
+                errorMessage = responseText || errorMessage;
+              }
             }
+          } catch (readError) {
+            // Keep the default errorMessage
           }
-        } catch (readError) {
-          // Keep the default errorMessage
-        }
-        
-        // Check if this is a rate limit error - handle it gracefully without console error
+
+          // Check if this is a rate limit error - handle it gracefully without console error
           const isRateLimitError =
             errorMessage.includes("Daily limit exceeded") ||
             errorMessage.includes("limited to 1 free analysis");
-        
-        if (isRateLimitError) {
-          // Set error state directly without throwing to avoid console error
-          setError(errorMessage);
-          return; // Exit early, don't throw
-        }
-        
-        throw new Error(errorMessage);
-      }
-      
-      const reader = response.body?.getReader();
-      if (!reader) {
-          throw new Error("No response body");
-      }
 
-      const decoder = new TextDecoder();
+          if (isRateLimitError) {
+            // Set error state directly without throwing to avoid console error
+            setError(errorMessage);
+            return; // Exit early, don't throw
+          }
+
+          throw new Error(errorMessage);
+        }
+
+        const reader = response.body?.getReader();
+        if (!reader) {
+          throw new Error("No response body");
+        }
+
+        const decoder = new TextDecoder();
         let buffer = "";
 
-      try {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
 
-          buffer += decoder.decode(value, { stream: true });
+            buffer += decoder.decode(value, { stream: true });
             const lines = buffer.split("\n");
             buffer = lines.pop() || "";
 
-          for (const line of lines) {
+            for (const line of lines) {
               if (line.trim() === "") continue;
               if (line.startsWith("data: ")) {
-              try {
-                const data: ProgressEvent = JSON.parse(line.slice(6));
-                handleProgressEvent(data);
-              } catch (e) {
+                try {
+                  const data: ProgressEvent = JSON.parse(line.slice(6));
+                  handleProgressEvent(data);
+                } catch (e) {
                   console.error("Error parsing SSE data:", e, line);
+                }
               }
             }
           }
+        } finally {
+          reader.releaseLock();
         }
-      } finally {
-        reader.releaseLock();
-      }
-    })
+      })
       .catch((err) => {
         console.error("Analysis failed:", err);
         setError(err.message || "Analysis failed");
-    });
+      });
   }, [url, extractIdentifier, detectPlatform]);
 
   const handleProgressEvent = useCallback((event: ProgressEvent) => {
@@ -295,7 +334,7 @@ function AnalysisContent() {
 
     if (event.type === "error") {
       setError(event.error || "Unknown error occurred");
-      
+
       // Track analysis errors
       if (typeof window !== "undefined") {
         import("@vercel/analytics").then(({ track }) => {
@@ -317,7 +356,7 @@ function AnalysisContent() {
       setSteps((prev) =>
         prev.map((step) => ({ ...step, status: "complete" as const }))
       );
-      
+
       // Track report completion event
       if (typeof window !== "undefined" && event.forecast) {
         import("@vercel/analytics").then(({ track }) => {
@@ -342,7 +381,7 @@ function AnalysisContent() {
 
       setSteps((prev) => {
         const existingIndex = prev.findIndex((s) => s.id === event.step);
-        
+
         if (existingIndex >= 0) {
           // Update existing step - if it has response data, mark as complete
           const updated = [...prev];
@@ -360,14 +399,15 @@ function AnalysisContent() {
           };
           return updated;
         } else {
-          // Mark previous step as complete when starting a new one
-          const updated = prev.map((step, index) => 
-            index === prev.length - 1 && step.status === "running"
-              ? { ...step, status: "complete" as const }
-              : step
+          // Mark previous step as complete and COLLAPSE it when starting a new one
+          const updated = prev.map(
+            (step, index) =>
+              index === prev.length - 1 && step.status === "running"
+                ? { ...step, status: "complete" as const, expanded: false }
+                : { ...step, expanded: false } // Collapse all previous steps
           );
-          
-          // Add new step
+
+          // Add new step and AUTO-EXPAND it
           const newStep: AnalysisStep = {
             id: event.step!,
             name: stepConfig.name,
@@ -376,9 +416,9 @@ function AnalysisContent() {
             status: "running",
             details: event.details,
             timestamp: event.timestamp,
-            expanded: false,
+            expanded: true, // Auto-expand the current running step
           };
-          
+
           return [...updated, newStep];
         }
       });
@@ -408,8 +448,8 @@ function AnalysisContent() {
     if (!mounted) return;
 
     if (isHistoricalView) {
-      // Load historical analysis
-      if (historyId && user && !isComplete && !isLoadingHistory) {
+      // Load historical analysis (disabled in hackathon mode)
+      if (historyId && !isComplete && !isLoadingHistory) {
         fetchHistoricalAnalysis();
       }
     } else {
@@ -485,7 +525,7 @@ function AnalysisContent() {
       "Signed-in users get 2 free analyses per day"
     );
     const isRateLimitError = isAnonymousRateLimit || isSignedInRateLimit;
-    
+
     if (isRateLimitError) {
       // Track rate limit hit
       if (typeof window !== "undefined") {
@@ -496,24 +536,12 @@ function AnalysisContent() {
           });
         });
       }
-      
+
       return (
-        <div className="min-h-screen bg-black text-white p-4 relative overflow-hidden">
-          {/* Video Background */}
-          <div className="fixed inset-0 w-full h-full z-0">
-            <video
-              autoPlay
-              loop
-              muted
-              playsInline
-              className="absolute inset-0 w-full h-full object-cover"
-            >
-              <source src="/analysis.webm" type="video/webm" />
-            </video>
-            {/* Dark overlay for better text readability */}
-            <div className="absolute inset-0 bg-black/40"></div>
-          </div>
-          
+        <div className="min-h-screen text-white p-4 relative overflow-hidden">
+          {/* Custom Animated Background */}
+          <CustomBackground />
+
           {/* Content overlay */}
           <div className="relative z-50 flex items-center justify-center min-h-screen">
             <motion.div
@@ -532,7 +560,7 @@ function AnalysisContent() {
                     <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-4">
                       <AlertCircle className="w-6 h-6 text-white" />
                     </div>
-                    
+
                     {/* Title */}
                     <h1 className="text-2xl md:text-3xl font-bold text-white mb-3 font-[family-name:var(--font-space)]">
                       You&apos;ve Used Your Free Analyses
@@ -541,7 +569,7 @@ function AnalysisContent() {
                       Upgrade to pay-per-use for unlimited access
                     </p>
                   </div>
-                  
+
                   {/* Pay Per Use Focus */}
                   <div className="max-w-md mx-auto mb-6">
                     <div className="bg-gradient-to-br from-green-500/20 to-emerald-500/20 backdrop-blur-sm border border-green-300/30 rounded-2xl p-6 text-center">
@@ -569,7 +597,7 @@ function AnalysisContent() {
                         <li>✓ Transparent pricing</li>
                         <li>✓ Start analyzing immediately</li>
                       </ul>
-                      <Button 
+                      <Button
                         onClick={() => router.push("/?plan=payperuse")}
                         size="lg"
                         className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold border-0"
@@ -578,14 +606,14 @@ function AnalysisContent() {
                       </Button>
                     </div>
                   </div>
-                  
+
                   {/* Action Buttons */}
                   <div className="bg-white/20 backdrop-blur-sm border border-white/30 rounded-2xl p-4 max-w-md mx-auto">
                     <div className="text-center">
                       <p className="text-white/60 text-sm mb-3">
                         Your free analysis resets daily at midnight
                       </p>
-                      <Button 
+                      <Button
                         onClick={() => router.push("/")}
                         variant="outline"
                         size="sm"
@@ -605,7 +633,7 @@ function AnalysisContent() {
                     <div className="w-12 h-12 bg-white/20 backdrop-blur-sm border border-white/30 rounded-full flex items-center justify-center mx-auto mb-4">
                       <AlertCircle className="w-6 h-6 text-white" />
                     </div>
-                    
+
                     {/* Title */}
                     <h1 className="text-2xl md:text-3xl font-bold text-white mb-3 font-[family-name:var(--font-space)]">
                       Daily Limit Reached
@@ -614,7 +642,7 @@ function AnalysisContent() {
                       Choose your plan to continue analyzing markets
                     </p>
                   </div>
-                  
+
                   {/* Pricing Plans */}
                   <div className="grid md:grid-cols-2 gap-4 mb-6 max-w-2xl mx-auto">
                     {/* Pay Per Use */}
@@ -643,7 +671,7 @@ function AnalysisContent() {
                         <li>✓ Transparent pricing</li>
                       </ul>
                     </div>
-                    
+
                     {/* Subscription */}
                     <div className="bg-gradient-to-br from-purple-500/30 to-blue-500/30 backdrop-blur-sm border border-purple-300/50 rounded-2xl p-6 text-center hover:from-purple-500/40 hover:to-blue-500/40 transition-all cursor-pointer relative">
                       <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-purple-500 to-blue-500 text-white text-xs px-3 py-1 rounded-full font-semibold">
@@ -670,27 +698,27 @@ function AnalysisContent() {
                       </ul>
                     </div>
                   </div>
-                  
+
                   {/* Action Buttons */}
                   <div className="bg-white/20 backdrop-blur-sm border border-white/30 rounded-2xl p-4 max-w-2xl mx-auto">
                     <div className="flex flex-col sm:flex-row gap-3 justify-center mb-3">
-                      <Button 
+                      <Button
                         onClick={() => router.push("/?plan=subscription")}
                         size="default"
                         className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-6 py-2 font-semibold border-0"
                       >
                         Start Unlimited Plan
                       </Button>
-                      <Button 
+                      <Button
                         onClick={() => router.push("/?plan=payperuse")}
-                        variant="outline" 
+                        variant="outline"
                         size="default"
                         className="border-white/30 bg-white/10 backdrop-blur-sm text-white hover:bg-white/20 px-6 py-2"
                       >
                         Pay Per Analysis
                       </Button>
                     </div>
-                    
+
                     {/* Reset Info */}
                     <p className="text-white/60 text-xs text-center">
                       Free analysis resets daily at midnight •{" "}
@@ -706,13 +734,13 @@ function AnalysisContent() {
               )}
             </motion.div>
           </div>
-          
+
           {/* Bottom fade overlay */}
           <div className="fixed bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-black via-black/50 to-transparent pointer-events-none z-40"></div>
         </div>
       );
     }
-    
+
     // Default error state for other errors
     return (
       <div className="min-h-screen bg-black flex items-center justify-center p-4">
@@ -736,24 +764,38 @@ function AnalysisContent() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white p-4 relative overflow-hidden">
-      {/* Video Background */}
-      <div className="fixed inset-0 w-full h-full z-0">
-        <video
-          autoPlay
-          loop
-          muted
-          playsInline
-          className="absolute inset-0 w-full h-full object-cover"
-        >
-          <source src="/analysis.webm" type="video/webm" />
-        </video>
-        {/* Dark overlay for better text readability */}
-        <div className="absolute inset-0 bg-black/40"></div>
-      </div>
-      
+    <div className="min-h-screen text-white p-4 relative overflow-hidden">
+      {/* Custom Animated Background - Same as Homepage */}
+      <CustomBackground />
+
       {/* Content overlay */}
       <div className="relative z-50 max-w-4xl mx-auto pt-24">
+        {/* Decision Header - Bold and Centered */}
+        {forecast && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-8 text-center"
+          >
+            {/* Market Question */}
+            <p className="text-white/70 text-base md:text-lg mb-4 max-w-2xl mx-auto">
+              {forecast.question}
+            </p>
+
+            {/* Prediction */}
+            <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
+              {forecast.pNeutral > 0.5
+                ? "✅ YES"
+                : forecast.pNeutral < 0.5
+                ? "❌ NO"
+                : "⚖️ NEUTRAL"}
+            </h1>
+            <p className="text-white/70 text-lg">
+              {(forecast.pNeutral * 100).toFixed(1)}% Probability
+            </p>
+          </motion.div>
+        )}
+
         {/* Header Section */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-4">
@@ -780,7 +822,7 @@ function AnalysisContent() {
               </div>
             )}
           </div>
-          
+
           {isHistoricalView && historicalAnalysis && (
             <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
@@ -808,7 +850,7 @@ function AnalysisContent() {
             </div>
           )}
         </div>
-        
+
         {/* Anonymous User Banner - Hidden in Hackathon Mode */}
         {false && !isHistoricalView && (
           <motion.div
@@ -879,406 +921,495 @@ function AnalysisContent() {
           </div>
         </motion.div>
 
-        {/* Analysis Trail */}
+        {/* Analysis Progress - Netflix Style Horizontal Bar */}
         <div className="relative mb-12">
-          {/* Timeline Line */}
-          <div className="absolute left-8 top-0 bottom-0 w-px bg-gradient-to-b from-blue-500/40 via-purple-500/40 to-green-500/40"></div>
-          
-          <div className="space-y-8">
-            <AnimatePresence>
-              {steps.map((step, index) => (
-                <motion.div
-                  key={step.id}
-                  initial={{ opacity: 0, x: -20, scale: 0.9 }}
-                  animate={{ opacity: 1, x: 0, scale: 1 }}
-                  exit={{ opacity: 0, x: 20, scale: 0.9 }}
-                  transition={{ 
-                    duration: 0.4, 
-                    delay: index * 0.08,
-                    ease: "easeOut",
-                  }}
-                  className="relative"
-                >
-                  {/* Timeline Dot */}
-                  <div className="absolute left-6 top-6 z-10">
-                    <div
-                      className={`
-                      w-4 h-4 rounded-full border-2 transition-all duration-300
-                      ${
-                        step.status === "complete"
-                          ? "bg-green-400 border-green-400 shadow-lg shadow-green-400/30"
-                          : step.status === "running"
-                          ? "bg-blue-400 border-blue-400 shadow-lg shadow-blue-400/30 animate-pulse"
-                          : step.status === "error"
-                          ? "bg-red-400 border-red-400 shadow-lg shadow-red-400/30"
-                          : "bg-white/10 border-white/20"
-                      }
-                    `}
-                    ></div>
-                  </div>
-                  
-                  {/* Step Card */}
-                  <div className="ml-16">
-                    <Card
-                      className={`
-                      relative z-10 backdrop-blur-sm transition-all duration-300 cursor-pointer hover:scale-[1.02] 
-                      ${
-                        step.status === "complete"
-                          ? "bg-green-400/10 border-green-400/30 shadow-lg shadow-green-400/20"
-                          : step.status === "running"
-                          ? "bg-blue-400/10 border-blue-400/30 shadow-lg shadow-blue-400/20"
-                          : step.status === "error"
-                          ? "bg-red-400/10 border-red-400/30 shadow-lg shadow-red-400/20"
-                          : "bg-white/10 border-white/20"
-                      }
-                    `}
+          {/* Horizontal Progress Bar */}
+          <div className="mb-8">
+            <div className="bg-black/40 backdrop-blur-sm border border-white/20 rounded-2xl p-4 md:p-6 overflow-hidden">
+              {/* Progress Track */}
+              <div className="relative mb-6">
+                <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                  <motion.div
+                    className="h-full bg-gradient-to-r from-purple-500 via-blue-500 to-green-500"
+                    initial={{ width: "0%" }}
+                    animate={{
+                      width: `${
+                        (steps.filter((s) => s.status === "complete").length /
+                          steps.length) *
+                        100
+                      }%`,
+                    }}
+                    transition={{ duration: 0.5, ease: "easeOut" }}
+                  />
+                </div>
+              </div>
+
+              {/* Steps Row with proper overflow handling */}
+              <div className="relative -mx-4 md:-mx-6 px-4 md:px-6">
+                <div className="flex items-start gap-2 md:gap-4 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent">
+                  {steps.map((step, index) => (
+                    <motion.div
+                      key={step.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.05 }}
+                      className="flex flex-col items-center flex-shrink-0 w-24 md:w-28 cursor-pointer group"
+                      onClick={() => toggleStepExpanded(step.id)}
                     >
-                      <CardHeader 
-                        className="pb-3" 
-                        onClick={() => toggleStepExpanded(step.id)}
+                      {/* Step Icon/Number */}
+                      <motion.div
+                        className={`
+                        w-12 h-12 rounded-full flex items-center justify-center mb-2
+                        transition-all duration-300 relative
+                        ${
+                          step.status === "complete"
+                            ? "bg-gradient-to-br from-green-400 to-emerald-500 shadow-lg shadow-green-400/50"
+                            : step.status === "running"
+                            ? "bg-gradient-to-br from-blue-400 to-cyan-500 shadow-lg shadow-blue-400/50"
+                            : step.status === "error"
+                            ? "bg-gradient-to-br from-red-400 to-rose-500 shadow-lg shadow-red-400/50"
+                            : "bg-white/10 border-2 border-white/20"
+                        }
+                      `}
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.95 }}
                       >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            {step.status === "complete" && (
-                              <motion.div
-                                initial={{ scale: 0 }}
-                                animate={{ scale: 1 }}
-                                transition={{ duration: 0.2, delay: 0.1 }}
-                              >
-                                <CheckCircle className="w-5 h-5 text-green-400" />
-                              </motion.div>
-                            )}
-                            {step.status === "running" && (
-                              <motion.div
-                                animate={{ rotate: 360 }}
-                                transition={{
-                                  duration: 2,
-                                  repeat: Infinity,
-                                  ease: "linear",
-                                }}
-                              >
-                                <Clock className="w-5 h-5 text-blue-400" />
-                              </motion.div>
-                            )}
-                            {step.status === "error" && (
-                              <AlertCircle className="w-5 h-5 text-red-400" />
-                            )}
-                            {step.status === "pending" && (
-                              <div className="w-5 h-5 border-2 border-white/20 rounded-full animate-pulse"></div>
-                            )}
-                            
-                            <div>
-                              {["initial_data", "complete_data_ready"].includes(
-                                step.id
-                              ) ? (
-                                <div>
-                                  <CardTitle className="text-white text-lg font-semibold">
-                                    {getPlatformFromUrl(url)} Market
-                                  </CardTitle>
-                                  {url && (
-                                    <div className="text-white/80 text-sm mt-1">
-                                      <a
-                                        href={url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="underline inline-flex items-center gap-1"
-                                      >
-                                        {formatSlugTitle(
-                                          extractIdentifier(url)
-                                        ) ||
-                                          `View on ${getPlatformFromUrl(
-                                            url
-                                          )}`}{" "}
-                                        <ExternalLink className="w-3 h-3" />
-                                      </a>
-                                    </div>
-                                  )}
-                                  {step.details?.question && (
-                                    <p className="text-white/70 text-sm mt-1 leading-relaxed">
-                                      {step.details.question}
-                                    </p>
-                                  )}
-                                  {step.timestamp && (
-                                    <p className="text-white/40 text-xs mt-1">
-                                      {new Date(
-                                        step.timestamp
-                                      ).toLocaleTimeString()}
-                                    </p>
-                                  )}
-                                </div>
-                              ) : (
-                                <>
-                                  <CardTitle className="text-white text-lg font-semibold">
-                                    {step.name}
-                                  </CardTitle>
-                                  <p className="text-white/70 text-sm mt-1 leading-relaxed">
-                                    {step.message}
-                                  </p>
-                                  {step.timestamp && (
-                                    <p className="text-white/40 text-xs mt-1">
-                                      {new Date(
-                                        step.timestamp
-                                      ).toLocaleTimeString()}
-                                    </p>
-                                  )}
-                                </>
-                              )}
-                            </div>
-                          </div>
-                          
-                          <div className="flex items-center gap-3">
-                            <motion.div
-                              initial={{ scale: 0 }}
-                              animate={{ scale: 1 }}
-                              transition={{ duration: 0.2, delay: 0.2 }}
-                            >
-                              <Badge 
-                                variant="outline"
+                        {step.status === "complete" && (
+                          <motion.div
+                            initial={{ scale: 0, rotate: -180 }}
+                            animate={{ scale: 1, rotate: 0 }}
+                            transition={{ type: "spring", stiffness: 200 }}
+                          >
+                            <CheckCircle className="w-6 h-6 text-white" />
+                          </motion.div>
+                        )}
+                        {step.status === "running" && (
+                          <motion.div
+                            animate={{ rotate: 360 }}
+                            transition={{
+                              duration: 2,
+                              repeat: Infinity,
+                              ease: "linear",
+                            }}
+                          >
+                            <Clock className="w-6 h-6 text-white" />
+                          </motion.div>
+                        )}
+                        {step.status === "error" && (
+                          <AlertCircle className="w-6 h-6 text-white" />
+                        )}
+                        {step.status === "pending" && (
+                          <span className="text-white/40 text-sm font-semibold">
+                            {index + 1}
+                          </span>
+                        )}
+
+                        {/* Glow effect for active step */}
+                        {step.status === "running" && (
+                          <motion.div
+                            className="absolute inset-0 rounded-full bg-blue-400/30"
+                            animate={{
+                              scale: [1, 1.5, 1],
+                              opacity: [0.5, 0, 0.5],
+                            }}
+                            transition={{
+                              duration: 2,
+                              repeat: Infinity,
+                              ease: "easeInOut",
+                            }}
+                          />
+                        )}
+                      </motion.div>
+
+                      {/* Step Name */}
+                      <div className="text-center">
+                        <p
+                          className={`
+                          text-xs font-medium transition-colors duration-200 line-clamp-2
+                          ${
+                            step.status === "complete"
+                              ? "text-green-400"
+                              : step.status === "running"
+                              ? "text-blue-400"
+                              : step.status === "error"
+                              ? "text-red-400"
+                              : "text-white/40"
+                          }
+                          group-hover:text-white
+                        `}
+                        >
+                          {step.name}
+                        </p>
+                      </div>
+
+                      {/* Connector Line - Hidden on horizontal scroll */}
+                      {index < steps.length - 1 && (
+                        <div className="hidden absolute top-6 left-[calc(50%+24px)] w-[calc(100%-48px)] h-0.5 -z-10">
+                          <div
+                            className={`
+                            h-full transition-all duration-500
+                            ${
+                              step.status === "complete"
+                                ? "bg-gradient-to-r from-green-400/50 to-white/20"
+                                : "bg-white/10"
+                            }
+                          `}
+                          />
+                        </div>
+                      )}
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Expandable Details Panel */}
+          <AnimatePresence mode="wait">
+            {steps.filter((s) => s.expanded).length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, height: 0, y: -20 }}
+                animate={{ opacity: 1, height: "auto", y: 0 }}
+                exit={{ opacity: 0, height: 0, y: -20 }}
+                transition={{ duration: 0.3, ease: "easeOut" }}
+                className="mb-8"
+              >
+                {steps
+                  .filter((s) => s.expanded)
+                  .map((step) => (
+                    <div key={step.id}>
+                      <Card className="bg-black/60 backdrop-blur-md border-white/30 shadow-2xl overflow-hidden">
+                        <CardHeader
+                          className="pb-4 cursor-pointer hover:bg-white/5 transition-colors"
+                          onClick={() => toggleStepExpanded(step.id)}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                              {/* Status Indicator with Accent Bar */}
+                              <div
                                 className={`
-                                  px-3 py-1 text-xs font-medium border transition-all duration-200
+                                  w-1.5 h-16 rounded-full -ml-6
                                   ${
                                     step.status === "complete"
-                                      ? "bg-green-400/10 text-green-400 border-green-400/30"
+                                      ? "bg-gradient-to-b from-green-400 to-emerald-500"
                                       : step.status === "running"
-                                      ? "bg-blue-400/10 text-blue-400 border-blue-400/30"
+                                      ? "bg-gradient-to-b from-blue-400 to-cyan-500"
                                       : step.status === "error"
-                                      ? "bg-red-400/10 text-red-400 border-red-400/30"
-                                      : "bg-white/5 text-white/60 border-white/20"
+                                      ? "bg-gradient-to-b from-red-400 to-rose-500"
+                                      : "bg-white/20"
                                   }
                                 `}
-                              >
-                                {step.status === "running" && "●"} {step.status}
-                              </Badge>
-                            </motion.div>
-                            
-                            {step.details &&
-                              Object.keys(step.details).length > 0 && (
-                              <motion.div
-                                whileHover={{ scale: 1.1 }}
-                                whileTap={{ scale: 0.9 }}
-                              >
-                                  {step.expanded ? (
-                                    <ChevronDown className="w-4 h-4 text-white/40" />
-                                  ) : (
-                                  <ChevronRight className="w-4 h-4 text-white/40" />
+                              />
+
+                              <div className="flex-1">
+                                <div className="flex items-center gap-3 mb-2">
+                                  {step.status === "complete" && (
+                                    <CheckCircle className="w-5 h-5 text-green-400" />
                                   )}
-                              </motion.div>
-                            )}
+                                  {step.status === "running" && (
+                                    <motion.div
+                                      animate={{ rotate: 360 }}
+                                      transition={{
+                                        duration: 2,
+                                        repeat: Infinity,
+                                        ease: "linear",
+                                      }}
+                                    >
+                                      <Clock className="w-5 h-5 text-blue-400" />
+                                    </motion.div>
+                                  )}
+                                  {step.status === "error" && (
+                                    <AlertCircle className="w-5 h-5 text-red-400" />
+                                  )}
+
+                                  <CardTitle className="text-white text-xl font-semibold">
+                                    {step.name}
+                                  </CardTitle>
+                                </div>
+
+                                {/* ChatGPT-style message with animated dots */}
+                                <div className="flex items-start gap-2">
+                                  <span className="text-white/60 text-sm mt-0.5">
+                                    •
+                                  </span>
+                                  <p className="text-white/70 text-sm leading-relaxed flex-1">
+                                    {step.message}
+                                    {step.status === "running" && (
+                                      <motion.span
+                                        className="inline-flex ml-1"
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        transition={{ delay: 0.5 }}
+                                      >
+                                        <motion.span
+                                          animate={{ opacity: [0.3, 1, 0.3] }}
+                                          transition={{
+                                            duration: 1.5,
+                                            repeat: Infinity,
+                                            delay: 0,
+                                          }}
+                                        >
+                                          .
+                                        </motion.span>
+                                        <motion.span
+                                          animate={{ opacity: [0.3, 1, 0.3] }}
+                                          transition={{
+                                            duration: 1.5,
+                                            repeat: Infinity,
+                                            delay: 0.2,
+                                          }}
+                                        >
+                                          .
+                                        </motion.span>
+                                        <motion.span
+                                          animate={{ opacity: [0.3, 1, 0.3] }}
+                                          transition={{
+                                            duration: 1.5,
+                                            repeat: Infinity,
+                                            delay: 0.4,
+                                          }}
+                                        >
+                                          .
+                                        </motion.span>
+                                      </motion.span>
+                                    )}
+                                  </p>
+                                </div>
+
+                                {step.timestamp && (
+                                  <p className="text-white/40 text-xs mt-2">
+                                    {new Date(
+                                      step.timestamp
+                                    ).toLocaleTimeString()}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Close/Expand Button */}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-white/60 hover:text-white hover:bg-white/10"
+                            >
+                              <ChevronDown className="w-5 h-5" />
+                            </Button>
                           </div>
-                        </div>
-                      </CardHeader>
-                      
-                      <AnimatePresence>
-                        {["initial_data", "complete_data_ready"].includes(
-                          step.id
-                        )
-                          ? step.details && (
-                            <motion.div
-                              initial={{ height: 0, opacity: 0 }}
-                                animate={{ height: "auto", opacity: 1 }}
-                              exit={{ height: 0, opacity: 0 }}
-                                transition={{
-                                  duration: 0.3,
-                                  ease: "easeInOut",
-                                }}
-                            >
-                              <CardContent className="pt-0 pb-6">
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-white/80 text-sm">
-                                    {typeof step.details.outcomes ===
-                                      "number" && (
-                                    <div>
-                                        <div className="text-white/60">
-                                          Outcomes
-                                        </div>
-                                        <div className="font-semibold">
-                                          {step.details.outcomes}
-                                        </div>
-                                    </div>
-                                  )}
-                                  {step.details.interval && (
-                                    <div>
-                                        <div className="text-white/60">
-                                          Interval
-                                        </div>
-                                        <div className="font-semibold">
-                                          {step.details.interval}
-                                        </div>
-                                    </div>
-                                  )}
-                                    {typeof step.details.historySeries ===
-                                      "number" && (
-                                    <div>
-                                        <div className="text-white/60">
-                                          History Series
-                                        </div>
-                                        <div className="font-semibold">
-                                          {step.details.historySeries}
-                                        </div>
-                                    </div>
-                                  )}
-                                    {typeof step.details.volume ===
-                                      "number" && (
-                                    <div>
-                                        <div className="text-white/60">
-                                          Volume
-                                        </div>
-                                        <div className="font-semibold">
-                                          {step.details.volume.toLocaleString()}
-                                        </div>
-                                    </div>
-                                  )}
-                                    {typeof step.details.liquidity ===
-                                      "number" && (
-                                    <div>
-                                        <div className="text-white/60">
-                                          Liquidity
-                                        </div>
-                                        <div className="font-semibold">
-                                          {step.details.liquidity.toLocaleString()}
-                                        </div>
-                                    </div>
-                                  )}
-                                  {step.details.closeTime && (
-                                    <div>
-                                        <div className="text-white/60">
-                                          Close Time
-                                        </div>
-                                        <div className="font-semibold">
-                                          {new Date(
-                                            step.details.closeTime
-                                          ).toLocaleString()}
-                                        </div>
-                                    </div>
-                                  )}
-                                  {step.details.resolutionSource && (
-                                    <div className="col-span-2">
-                                        <div className="text-white/60">
-                                          Resolution Source
-                                        </div>
-                                        <div className="font-semibold truncate">
-                                          {step.details.resolutionSource}
-                                        </div>
-                                    </div>
-                                  )}
-                                </div>
+                        </CardHeader>
 
-                                  {Array.isArray(step.details.pricesNow) &&
-                                    step.details.pricesNow.length > 0 && (
-                                  <div className="mt-4">
-                                        <div className="text-white/60 text-sm mb-2">
-                                          Top of Book
-                                        </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                          {step.details.pricesNow.map(
-                                            (p: any, idx: number) => (
-                                              <div
-                                                key={idx}
-                                                className="text-white/80 text-sm flex justify-between bg-white/5 rounded p-2"
-                                              >
-                                                <span className="truncate mr-2">
-                                                  {p.outcome || "Outcome"}
-                                                </span>
-                                                <span className="font-mono">
-                                                  bid {p.bid ?? "-"} | ask{" "}
-                                                  {p.ask ?? "-"} | mid{" "}
-                                                  {p.mid ?? "-"}
-                                                </span>
-                                        </div>
-                                            )
-                                          )}
-                                    </div>
-                                  </div>
-                                )}
-                                  {step.details?.eventSummary
-                                    ?.isMultiCandidate &&
-                                    Array.isArray(
-                                      step.details.eventSummary.topCandidates
-                                    ) && (
-                                  <div className="mt-4">
-                                        <div className="text-white/60 text-sm mb-2">
-                                          Top Candidates
-                                        </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                          {step.details.eventSummary.topCandidates.map(
-                                            (c: any, idx: number) => (
-                                              <div
-                                                key={idx}
-                                                className="text-white/80 text-sm bg-white/5 rounded p-2 flex justify-between"
-                                              >
-                                                <span className="truncate mr-2">
-                                                  {c.name}
-                                                </span>
-                                          <span className="font-mono">
-                                                  {c.implied_probability != null
-                                                    ? `${(
-                                                        c.implied_probability *
-                                                        100
-                                                      ).toFixed(1)}%`
-                                                    : "-"}
-                                                  {typeof c.volume === "number"
-                                                    ? ` | vol $${c.volume.toLocaleString()}`
-                                                    : ""}
-                                                  {typeof c.liquidity ===
-                                                  "number"
-                                                    ? ` | liq $${c.liquidity.toLocaleString()}`
-                                                    : ""}
-                                          </span>
-                                        </div>
-                                            )
-                                          )}
-                                    </div>
-                                  </div>
-                                )}
-
-                                  {typeof step.details.withBooks !==
-                                    "undefined" && (
-                                    <div className="mt-4 text-white/80 text-sm">
-                                      Order Books:{" "}
-                                      <span className="font-semibold">
-                                        {String(step.details.withBooks)}
-                                      </span>
-                                    </div>
-                                )}
-                                  {typeof step.details.withTrades !==
-                                    "undefined" && (
-                                    <div className="text-white/80 text-sm">
-                                      Recent Trades:{" "}
-                                      <span className="font-semibold">
-                                        {String(step.details.withTrades)}
-                                      </span>
-                                    </div>
-                                )}
-                              </CardContent>
-                            </motion.div>
+                        <AnimatePresence>
+                          {["initial_data", "complete_data_ready"].includes(
+                            step.id
                           )
-                          : step.expanded &&
-                            step.details &&
-                            Object.keys(step.details).length > 0 && (
-                            <motion.div
-                              initial={{ height: 0, opacity: 0 }}
-                                animate={{ height: "auto", opacity: 1 }}
-                              exit={{ height: 0, opacity: 0 }}
-                                transition={{
-                                  duration: 0.3,
-                                  ease: "easeInOut",
-                                }}
-                            >
-                              <CardContent className="pt-0 pb-6">
-                                <div className="bg-black/50 rounded-lg p-6 border border-white/10">
-                                  <pre className="whitespace-pre-wrap text-white/80 text-xs leading-relaxed font-mono overflow-x-auto max-h-96 overflow-y-auto">
-                                    {JSON.stringify(step.details, null, 2)}
-                                  </pre>
-                                </div>
-                              </CardContent>
-                            </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </Card>
-                  </div>
-                </motion.div>
-              ))}
-            </AnimatePresence>
-          </div>
+                            ? step.details && (
+                                <motion.div
+                                  initial={{ height: 0, opacity: 0 }}
+                                  animate={{ height: "auto", opacity: 1 }}
+                                  exit={{ height: 0, opacity: 0 }}
+                                  transition={{
+                                    duration: 0.3,
+                                    ease: "easeInOut",
+                                  }}
+                                >
+                                  <CardContent className="pt-0 pb-6">
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-white/80 text-sm">
+                                      {typeof step.details.outcomes ===
+                                        "number" && (
+                                        <div>
+                                          <div className="text-white/60">
+                                            Outcomes
+                                          </div>
+                                          <div className="font-semibold">
+                                            {step.details.outcomes}
+                                          </div>
+                                        </div>
+                                      )}
+                                      {step.details.interval && (
+                                        <div>
+                                          <div className="text-white/60">
+                                            Interval
+                                          </div>
+                                          <div className="font-semibold">
+                                            {step.details.interval}
+                                          </div>
+                                        </div>
+                                      )}
+                                      {typeof step.details.historySeries ===
+                                        "number" && (
+                                        <div>
+                                          <div className="text-white/60">
+                                            History Series
+                                          </div>
+                                          <div className="font-semibold">
+                                            {step.details.historySeries}
+                                          </div>
+                                        </div>
+                                      )}
+                                      {typeof step.details.volume ===
+                                        "number" && (
+                                        <div>
+                                          <div className="text-white/60">
+                                            Volume
+                                          </div>
+                                          <div className="font-semibold">
+                                            {step.details.volume.toLocaleString()}
+                                          </div>
+                                        </div>
+                                      )}
+                                      {typeof step.details.liquidity ===
+                                        "number" && (
+                                        <div>
+                                          <div className="text-white/60">
+                                            Liquidity
+                                          </div>
+                                          <div className="font-semibold">
+                                            {step.details.liquidity.toLocaleString()}
+                                          </div>
+                                        </div>
+                                      )}
+                                      {step.details.closeTime && (
+                                        <div>
+                                          <div className="text-white/60">
+                                            Close Time
+                                          </div>
+                                          <div className="font-semibold">
+                                            {new Date(
+                                              step.details.closeTime
+                                            ).toLocaleString()}
+                                          </div>
+                                        </div>
+                                      )}
+                                      {step.details.resolutionSource && (
+                                        <div className="col-span-2">
+                                          <div className="text-white/60">
+                                            Resolution Source
+                                          </div>
+                                          <div className="font-semibold truncate">
+                                            {step.details.resolutionSource}
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+
+                                    {Array.isArray(step.details.pricesNow) &&
+                                      step.details.pricesNow.length > 0 && (
+                                        <div className="mt-4">
+                                          <div className="text-white/60 text-sm mb-2">
+                                            Top of Book
+                                          </div>
+                                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                            {step.details.pricesNow.map(
+                                              (p: any, idx: number) => (
+                                                <div
+                                                  key={idx}
+                                                  className="text-white/80 text-sm flex justify-between bg-white/5 rounded p-2"
+                                                >
+                                                  <span className="truncate mr-2">
+                                                    {p.outcome || "Outcome"}
+                                                  </span>
+                                                  <span className="font-mono">
+                                                    bid {p.bid ?? "-"} | ask{" "}
+                                                    {p.ask ?? "-"} | mid{" "}
+                                                    {p.mid ?? "-"}
+                                                  </span>
+                                                </div>
+                                              )
+                                            )}
+                                          </div>
+                                        </div>
+                                      )}
+                                    {step.details?.eventSummary
+                                      ?.isMultiCandidate &&
+                                      Array.isArray(
+                                        step.details.eventSummary.topCandidates
+                                      ) && (
+                                        <div className="mt-4">
+                                          <div className="text-white/60 text-sm mb-2">
+                                            Top Candidates
+                                          </div>
+                                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                            {step.details.eventSummary.topCandidates.map(
+                                              (c: any, idx: number) => (
+                                                <div
+                                                  key={idx}
+                                                  className="text-white/80 text-sm bg-white/5 rounded p-2 flex justify-between"
+                                                >
+                                                  <span className="truncate mr-2">
+                                                    {c.name}
+                                                  </span>
+                                                  <span className="font-mono">
+                                                    {c.implied_probability !=
+                                                    null
+                                                      ? `${(
+                                                          c.implied_probability *
+                                                          100
+                                                        ).toFixed(1)}%`
+                                                      : "-"}
+                                                    {typeof c.volume ===
+                                                    "number"
+                                                      ? ` | vol $${c.volume.toLocaleString()}`
+                                                      : ""}
+                                                    {typeof c.liquidity ===
+                                                    "number"
+                                                      ? ` | liq $${c.liquidity.toLocaleString()}`
+                                                      : ""}
+                                                  </span>
+                                                </div>
+                                              )
+                                            )}
+                                          </div>
+                                        </div>
+                                      )}
+
+                                    {typeof step.details.withBooks !==
+                                      "undefined" && (
+                                      <div className="mt-4 text-white/80 text-sm">
+                                        Order Books:{" "}
+                                        <span className="font-semibold">
+                                          {String(step.details.withBooks)}
+                                        </span>
+                                      </div>
+                                    )}
+                                    {typeof step.details.withTrades !==
+                                      "undefined" && (
+                                      <div className="text-white/80 text-sm">
+                                        Recent Trades:{" "}
+                                        <span className="font-semibold">
+                                          {String(step.details.withTrades)}
+                                        </span>
+                                      </div>
+                                    )}
+                                  </CardContent>
+                                </motion.div>
+                              )
+                            : step.expanded &&
+                              step.details &&
+                              Object.keys(step.details).length > 0 && (
+                                <motion.div
+                                  initial={{ height: 0, opacity: 0 }}
+                                  animate={{ height: "auto", opacity: 1 }}
+                                  exit={{ height: 0, opacity: 0 }}
+                                  transition={{
+                                    duration: 0.3,
+                                    ease: "easeInOut",
+                                  }}
+                                >
+                                  <CardContent className="pt-0 pb-6">
+                                    <div className="bg-black/50 rounded-lg p-6 border border-white/10">
+                                      <pre className="whitespace-pre-wrap text-white/80 text-xs leading-relaxed font-mono overflow-x-auto max-h-96 overflow-y-auto">
+                                        {JSON.stringify(step.details, null, 2)}
+                                      </pre>
+                                    </div>
+                                  </CardContent>
+                                </motion.div>
+                              )}
+                        </AnimatePresence>
+                      </Card>
+                    </div>
+                  ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         {/* Final Results */}
@@ -1309,74 +1440,93 @@ function AnalysisContent() {
                     </div>
                   )}
                 </CardHeader>
-                
+
                 <CardContent>
                   <div className="grid md:grid-cols-2 gap-6 min-w-0">
                     <div>
-                      <h3 className="text-lg font-semibold text-white mb-4">
-                        Probability Estimates
+                      <h3 className="text-lg font-semibold text-white mb-3">
+                        📊 Analysis Outcome
                       </h3>
+                      <p className="text-white/60 text-xs mb-4 leading-relaxed">
+                        Our AI analyzed all evidence and calculated these
+                        probability estimates for the outcome.
+                      </p>
                       <div className="space-y-3">
-                        <div className="flex justify-between items-center">
-                          <span className="text-white/70">
-                            Neutral Analysis:
-                          </span>
-                          <Badge className="bg-blue-400/20 text-blue-400">
-                            {(forecast.pNeutral * 100).toFixed(1)}%
-                          </Badge>
-                        </div>
-                        {forecast.pAware && (
-                          <div className="flex justify-between items-center">
-                            <span className="text-white/70">Market-Aware:</span>
-                            <Badge className="bg-purple-400/20 text-purple-400">
-                              {(forecast.pAware * 100).toFixed(1)}%
+                        <div className="bg-white/5 rounded-lg p-3 border border-white/10">
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="text-white/90 font-medium text-sm">
+                              Our Prediction
+                            </span>
+                            <Badge className="bg-blue-500/20 text-blue-400 font-bold text-base">
+                              {(forecast.pNeutral * 100).toFixed(1)}%
                             </Badge>
                           </div>
-                        )}
-                        <div className="flex justify-between items-center">
-                          <span className="text-white/70">Market Prior:</span>
-                          <Badge className="bg-gray-400/20 text-gray-400">
-                            {(forecast.p0 * 100).toFixed(1)}%
-                          </Badge>
+                          <p className="text-white/50 text-xs">
+                            Based on all evidence analyzed
+                          </p>
                         </div>
+
+                        <div className="bg-white/5 rounded-lg p-3 border border-white/10">
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="text-white/90 font-medium text-sm">
+                              Market Price
+                            </span>
+                            <Badge className="bg-gray-400/20 text-gray-400 text-base">
+                              {(forecast.p0 * 100).toFixed(1)}%
+                            </Badge>
+                          </div>
+                          <p className="text-white/50 text-xs">
+                            What traders currently believe
+                          </p>
+                        </div>
+
+                        {forecast.pAware && (
+                          <div className="bg-white/5 rounded-lg p-3 border border-white/10">
+                            <div className="flex justify-between items-center mb-1">
+                              <span className="text-white/90 font-medium text-sm">
+                                Market-Adjusted
+                              </span>
+                              <Badge className="bg-purple-400/20 text-purple-400 text-base">
+                                {(forecast.pAware * 100).toFixed(1)}%
+                              </Badge>
+                            </div>
+                            <p className="text-white/50 text-xs">
+                              Prediction adjusted for market wisdom
+                            </p>
+                          </div>
+                        )}
                       </div>
                     </div>
-                    
+
                     <div className="min-w-0">
                       <h3 className="text-lg font-semibold text-white mb-4">
                         Analysis Drivers
                       </h3>
-                      <div className="flex flex-wrap gap-2">
+                      <div className="space-y-2">
                         {forecast.drivers.map((driver, i) => (
-                          <Badge 
-                            key={i} 
-                            variant="outline" 
-                            className="border-white/20 text-white/80 text-xs leading-tight whitespace-normal break-words max-w-full"
-                            title={driver}
+                          <div
+                            key={i}
+                            className="text-white/80 text-sm leading-relaxed bg-white/5 rounded-lg p-3 border border-white/10"
                           >
-                            {driver.length > 80
-                              ? `${driver.substring(0, 80)}...`
-                              : driver}
-                          </Badge>
+                            <span className="text-white/60 mr-2">•</span>
+                            {driver}
+                          </div>
                         ))}
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="mt-6 pt-6 border-t border-white/10">
                     <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
                       <div className="text-center sm:text-left">
                         <p className="text-lg font-semibold text-white mb-1">
-                          Recommendation:{" "}
-                          {forecast.pNeutral > 0.5 ? "YES" : "NO"}
+                          Prediction: {forecast.pNeutral > 0.5 ? "YES" : "NO"}
                         </p>
                         <p className="text-white/60 text-sm">
-                          Confidence:{" "}
-                          {(Math.abs(forecast.pNeutral - 0.5) * 200).toFixed(0)}
-                          %
+                          Probability: {(forecast.pNeutral * 100).toFixed(1)}%
                         </p>
                       </div>
-                      
+
                       <Button
                         onClick={openMarketBet}
                         className="bg-purple-600 hover:bg-purple-700 text-white flex items-center gap-2"
@@ -1407,17 +1557,64 @@ function AnalysisContent() {
                   </div>
                 </CardContent>
               </Card>
-              
+
               {forecast.markdownReport && (
                 <Card className="relative z-10 backdrop-blur-md mt-6 bg-black/70 border-white/30">
                   <CardHeader>
-                    <CardTitle className="text-white">
-                      Detailed Report
-                    </CardTitle>
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-white flex items-center gap-2">
+                        <FileText className="w-5 h-5" />
+                        Analysis Report
+                      </CardTitle>
+                      <div className="flex items-center gap-2">
+                        {forecast.detailedReport && (
+                          <Button
+                            onClick={() =>
+                              setShowDetailedReport(!showDetailedReport)
+                            }
+                            variant="outline"
+                            size="sm"
+                            className="border-white/30 bg-white/10 text-white hover:bg-white/20"
+                          >
+                            {showDetailedReport
+                              ? "Show Concise"
+                              : "Show Detailed"}
+                          </Button>
+                        )}
+                        <Button
+                          onClick={() =>
+                            downloadReport("markdown", showDetailedReport)
+                          }
+                          variant="outline"
+                          size="sm"
+                          className="border-white/30 bg-white/10 text-white hover:bg-white/20"
+                        >
+                          <Download className="w-4 h-4 mr-2" />
+                          Download MD
+                        </Button>
+                        <Button
+                          onClick={() =>
+                            downloadReport("txt", showDetailedReport)
+                          }
+                          variant="outline"
+                          size="sm"
+                          className="border-white/30 bg-white/10 text-white hover:bg-white/20"
+                        >
+                          <Download className="w-4 h-4 mr-2" />
+                          Download TXT
+                        </Button>
+                      </div>
+                    </div>
+                    <p className="text-white/60 text-sm mt-2">
+                      {showDetailedReport && forecast.detailedReport
+                        ? "Technical deep dive with full methodology"
+                        : "Evidence-based summary for quick understanding"}
+                    </p>
                   </CardHeader>
                   <CardContent>
                     <div className="prose prose-invert prose-sm max-w-none bg-black/30 rounded-lg p-4">
                       <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
                         components={
                           {
                             h1: ({
@@ -1497,10 +1694,66 @@ function AnalysisContent() {
                                 {children}
                               </code>
                             ),
+                            table: ({
+                              children,
+                            }: {
+                              children: React.ReactNode;
+                            }) => (
+                              <div className="overflow-x-auto my-6">
+                                <table className="w-full border-collapse border border-white/30 rounded-lg">
+                                  {children}
+                                </table>
+                              </div>
+                            ),
+                            thead: ({
+                              children,
+                            }: {
+                              children: React.ReactNode;
+                            }) => (
+                              <thead className="bg-white/10">{children}</thead>
+                            ),
+                            tbody: ({
+                              children,
+                            }: {
+                              children: React.ReactNode;
+                            }) => (
+                              <tbody className="divide-y divide-white/20">
+                                {children}
+                              </tbody>
+                            ),
+                            tr: ({
+                              children,
+                            }: {
+                              children: React.ReactNode;
+                            }) => (
+                              <tr className="hover:bg-white/5 transition-colors">
+                                {children}
+                              </tr>
+                            ),
+                            th: ({
+                              children,
+                            }: {
+                              children: React.ReactNode;
+                            }) => (
+                              <th className="px-4 py-3 text-left text-white font-semibold border-r border-white/20 last:border-r-0">
+                                {children}
+                              </th>
+                            ),
+                            td: ({
+                              children,
+                            }: {
+                              children: React.ReactNode;
+                            }) => (
+                              <td className="px-4 py-3 text-white/90 border-r border-white/20 last:border-r-0">
+                                {children}
+                              </td>
+                            ),
                           } as Components
                         }
                       >
-                        {forecast.markdownReport}
+                        {showDetailedReport && forecast.detailedReport
+                          ? forecast.detailedReport
+                          : forecast.markdownReport}
                       </ReactMarkdown>
                     </div>
 
@@ -1512,25 +1765,25 @@ function AnalysisContent() {
                         <ol className="space-y-2 text-sm list-decimal list-inside">
                           {Array.from(new Set(forecast.provenance)).map(
                             (url, idx) => {
-                            let label = url;
-                            try {
-                              const u = new URL(url);
+                              let label = url;
+                              try {
+                                const u = new URL(url);
                                 label = `${u.hostname.replace(/^www\./, "")}${
                                   u.pathname
                                 }`;
-                            } catch {}
-                            return (
-                              <li key={idx} className="text-white/80">
+                              } catch {}
+                              return (
+                                <li key={idx} className="text-white/80">
                                   <a
                                     href={url}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="underline hover:text-white"
                                   >
-                                  {label}
-                                </a>
-                              </li>
-                            );
+                                    {label}
+                                  </a>
+                                </li>
+                              );
                             }
                           )}
                         </ol>
@@ -1539,10 +1792,32 @@ function AnalysisContent() {
                   </CardContent>
                 </Card>
               )}
+
+              {/* Chat with Report Section */}
+              {isComplete && forecast && (
+                <Card className="relative z-10 backdrop-blur-md mt-6 bg-black/70 border-white/30">
+                  <CardHeader>
+                    <CardTitle className="text-white flex items-center gap-2">
+                      <MessageCircle className="w-5 h-5" />
+                      Ask Questions About This Report
+                    </CardTitle>
+                    <p className="text-white/60 text-sm">
+                      Get deeper insights by asking questions about the analysis
+                    </p>
+                  </CardHeader>
+                  <CardContent>
+                    <ReportChat
+                      report={forecast.markdownReport || ""}
+                      marketTitle={forecast.question || ""}
+                      alpha={forecast.alpha}
+                    />
+                  </CardContent>
+                </Card>
+              )}
             </motion.div>
           )}
         </AnimatePresence>
-        
+
         {!isComplete && steps.length === 0 && (
           <div className="text-center">
             <motion.div
@@ -1554,7 +1829,7 @@ function AnalysisContent() {
           </div>
         )}
       </div>
-      
+
       {/* Bottom fade overlay */}
       <div className="fixed bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-black via-black/50 to-transparent pointer-events-none z-40"></div>
     </div>
@@ -1563,7 +1838,7 @@ function AnalysisContent() {
 
 export default function AnalysisPage() {
   return (
-    <Suspense 
+    <Suspense
       fallback={
         <div className="min-h-screen bg-black flex items-center justify-center">
           <motion.div

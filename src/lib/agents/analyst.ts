@@ -179,23 +179,27 @@ export async function analystAgentWithCritique(
   question: string, 
   p0: number, 
   evidence: Evidence[], 
-  critique: { duplicationFlags: string[]; correlationAdjustments: Record<string, number>; dataConcerns: string[] },
+  critique: { duplicationFlags: string[]; correlationAdjustments: Record<string, number>; dataConcerns: string[] } | null,
   rhoByCluster?: Record<string, number>, 
   marketFn?: MarketFn
 ) {
-  // Step 1: Filter out flagged evidence based on critic feedback
-  let filteredEvidence = evidence.filter(e => {
-    // Remove evidence flagged as duplicates or with severe data concerns
-    const isDuplicate = critique.duplicationFlags.some(flag => 
-      e.id.includes(flag) || e.originId.includes(flag)
-    );
-    const hasDataConcerns = critique.dataConcerns.some(concern => 
-      e.claim.toLowerCase().includes(concern.toLowerCase()) ||
-      e.originId.toLowerCase().includes(concern.toLowerCase())
-    );
-    
-    return !isDuplicate && !hasDataConcerns;
-  });
+  // Step 1: Filter out flagged evidence based on critic feedback (if available)
+  let filteredEvidence = evidence;
+  
+  if (critique) {
+    filteredEvidence = evidence.filter(e => {
+      // Remove evidence flagged as duplicates or with severe data concerns
+      const isDuplicate = critique.duplicationFlags.some(flag => 
+        e.id.includes(flag) || e.originId.includes(flag)
+      );
+      const hasDataConcerns = critique.dataConcerns.some(concern => 
+        e.claim.toLowerCase().includes(concern.toLowerCase()) ||
+        e.originId.toLowerCase().includes(concern.toLowerCase())
+      );
+      
+      return !isDuplicate && !hasDataConcerns;
+    });
+  }
 
   // Step 2: Use LLM to analyze topic relevance
   console.log(`🔍 Analyzing topic relevance for ${filteredEvidence.length} evidence items...`);
@@ -245,13 +249,21 @@ export async function analystAgentWithCritique(
     return { ...e, logLRHint: hinted };
   });
 
-  // Step 5: Apply correlation adjustments from critic
+  // Step 5: Apply correlation adjustments from critic (if available)
   const adjustedRho = { ...rhoByCluster };
-  for (const [clusterId, adjustment] of Object.entries(critique.correlationAdjustments)) {
-    adjustedRho[clusterId] = adjustment;
+  if (critique) {
+    for (const [clusterId, adjustment] of Object.entries(critique.correlationAdjustments)) {
+      adjustedRho[clusterId] = adjustment;
+    }
   }
 
-  console.log(`📊 Analyst applying critic feedback: filtered ${evidence.length - filteredEvidence.length} evidence items total, niche-boosted ${Object.keys(nicheMap).length} items, pathway-scaled ${pathwayScaled.length} items, adjusted ${Object.keys(critique.correlationAdjustments).length} correlations`);
+  const filterStats = critique 
+    ? `filtered ${evidence.length - filteredEvidence.length} evidence items total`
+    : 'no critic feedback applied';
+  console.log(`📊 Analyst: ${filterStats}, niche-boosted ${Object.keys(nicheMap).length} items, pathway-scaled ${pathwayScaled.length} items`);
+  if (critique) {
+    console.log(`📊 Adjusted ${Object.keys(critique.correlationAdjustments).length} correlations`);
+  }
 
   const { pNeutral, influence, clusters } = aggregateNeutral(p0, recencyScaled, adjustedRho);
   let pAware: number | undefined;

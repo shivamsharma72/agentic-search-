@@ -61,7 +61,7 @@ async function http<T = any>(
   retries = 3
 ): Promise<T> {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 15000);
+  const timeoutId = setTimeout(() => controller.abort(), 30000); // Increased to 30 seconds
   for (let i = 0; i < retries; i++) {
     try {
       const res = await fetch(input, {
@@ -78,6 +78,7 @@ async function http<T = any>(
         return (text ? JSON.parse(text) : (undefined as any)) as T;
       }
       if (res.status >= 500 || res.status === 429) {
+        console.warn(`[Polymarket API] ${res.status} ${res.statusText}, retrying (${i + 1}/${retries})...`);
         await sleep(300 * (i + 1));
         continue;
       }
@@ -90,6 +91,7 @@ async function http<T = any>(
       );
     } catch (err) {
       clearTimeout(timeoutId);
+      console.error(`[Polymarket API] Request failed (attempt ${i + 1}/${retries}):`, err instanceof Error ? err.message : String(err));
       if (i === retries - 1) throw err;
       await sleep(300 * (i + 1));
     }

@@ -36,7 +36,8 @@ export interface SearchMarketsParams {
   query?: string;
   tag?: string;
   limit?: number;
-  active?: boolean;
+  closed?: boolean; // false = exclude closed markets, true = include closed
+  ascending?: boolean;
   order?: 'volume' | 'liquidity' | 'end_date';
 }
 

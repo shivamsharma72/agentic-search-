@@ -114,6 +114,12 @@ export default function ChatInterface() {
     return `$${volume}`;
   };
 
+  const getYesPercentage = (market: PolymarketMarket) => {
+    if (!market.current_prices) return null;
+    const yesPrice = market.current_prices.Yes || market.current_prices.yes || 0;
+    return Math.round(yesPrice * 100);
+  };
+
   return (
     <div className="h-full flex flex-col bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10">
       {/* Messages */}
@@ -144,72 +150,94 @@ export default function ChatInterface() {
                   Array.isArray(message.markets) &&
                   message.markets.length > 0 && (
                     <div className="mt-4 space-y-2">
-                      {message.markets.slice(0, 5).map((market) => (
-                        <Card
-                          key={market.id}
-                          className="bg-white/5 border-white/10 p-3 hover:bg-white/10 transition-colors"
-                        >
-                          <div className="space-y-2">
-                            <h4 className="text-sm font-medium text-white line-clamp-2">
-                              {market.question}
-                            </h4>
+                      {message.markets.slice(0, 5).map((market) => {
+                        const yesPercent = getYesPercentage(market);
 
-                            <div className="flex items-center gap-2 text-xs flex-wrap">
-                              <Badge
-                                variant="secondary"
-                                className="bg-green-500/20 text-green-300"
-                              >
-                                <TrendingUp className="w-3 h-3 mr-1" />
-                                {formatVolume(market.volume)}
-                              </Badge>
-                              <Badge
-                                variant="secondary"
-                                className="bg-blue-500/20 text-blue-300"
-                              >
-                                <DollarSign className="w-3 h-3 mr-1" />
-                                {formatVolume(market.liquidity)}
-                              </Badge>
-                              {market.active && (
+                        return (
+                          <Card
+                            key={market.id}
+                            className="bg-white/5 border-white/10 p-3 hover:bg-white/10 transition-colors"
+                          >
+                            <div className="space-y-2">
+                              <h4 className="text-sm font-medium text-white line-clamp-2">
+                                {market.question}
+                              </h4>
+
+                              <div className="flex items-center gap-2 text-xs flex-wrap">
                                 <Badge
                                   variant="secondary"
-                                  className="bg-emerald-500/20 text-emerald-300"
+                                  className="bg-green-500/20 text-green-300"
                                 >
-                                  Live
+                                  <TrendingUp className="w-3 h-3 mr-1" />
+                                  {formatVolume(market.volume)}
                                 </Badge>
+                                <Badge
+                                  variant="secondary"
+                                  className="bg-blue-500/20 text-blue-300"
+                                >
+                                  <DollarSign className="w-3 h-3 mr-1" />
+                                  {formatVolume(market.liquidity)}
+                                </Badge>
+                                {market.active && (
+                                  <Badge
+                                    variant="secondary"
+                                    className="bg-emerald-500/20 text-emerald-300"
+                                  >
+                                    Live
+                                  </Badge>
+                                )}
+                              </div>
+
+                              {/* Probability Bar */}
+                              {yesPercent !== null && (
+                                <div className="space-y-1">
+                                  <div className="flex items-center justify-between text-xs">
+                                    <span className="text-white/60">Prediction</span>
+                                    <span className="text-white/80 font-medium">
+                                      {yesPercent}% YES
+                                    </span>
+                                  </div>
+                                  <div className="w-full bg-white/20 rounded-full h-1.5 overflow-hidden">
+                                    <div
+                                      className="h-full bg-gradient-to-r from-purple-400 to-blue-400 transition-all"
+                                      style={{ width: `${yesPercent}%` }}
+                                    />
+                                  </div>
+                                </div>
                               )}
-                            </div>
 
-                            {/* Market URL - for reference */}
-                            <p className="text-[10px] text-white/40 font-mono truncate">
-                              polymarket.com/event/{market.slug}
-                            </p>
+                              {/* Market URL - for reference */}
+                              <p className="text-[10px] text-white/40 font-mono truncate">
+                                polymarket.com/event/{market.slug}
+                              </p>
 
-                            <div className="flex gap-2">
-                              <Button
-                                size="sm"
-                                onClick={() => handleAnalyze(market)}
-                                className="flex-1 bg-purple-500 hover:bg-purple-600 text-white"
-                              >
-                                <Sparkles className="w-3 h-3 mr-2" />
-                                Deep Analysis
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() =>
-                                  window.open(
-                                    `https://polymarket.com/event/${market.slug}`,
-                                    "_blank"
-                                  )
-                                }
-                                className="bg-white/5 border-white/10 text-white hover:bg-white/10"
-                              >
-                                View
-                              </Button>
+                              <div className="flex gap-2">
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleAnalyze(market)}
+                                  className="flex-1 bg-purple-500 hover:bg-purple-600 text-white"
+                                >
+                                  <Sparkles className="w-3 h-3 mr-2" />
+                                  Deep Analysis
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() =>
+                                    window.open(
+                                      `https://polymarket.com/event/${market.slug}`,
+                                      "_blank"
+                                    )
+                                  }
+                                  className="bg-white/5 border-white/10 text-white hover:bg-white/10"
+                                >
+                                  View
+                                </Button>
+                              </div>
                             </div>
-                          </div>
-                        </Card>
-                      ))}
+                          </Card>
+                        );
+                      })}
                     </div>
                   )}
 

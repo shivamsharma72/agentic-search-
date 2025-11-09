@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
       drivers = [],
       historyInterval = '1d',
       withBooks = true,
-      withTrades = false
+      withTrades = false,
     } = body;
 
     // Determine which parameter was provided and validate
@@ -105,7 +105,7 @@ export async function POST(req: NextRequest) {
             historyInterval,
             withBooks,
             withTrades,
-            onProgress
+            onProgress,
           });
 
           // Send final result

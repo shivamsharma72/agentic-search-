@@ -3,7 +3,7 @@ import { ForecastCard, InfluenceItem, ClusterMeta } from './types';
 export function makeForecastCard(params: {
   question: string; p0: number; pNeutral: number; pAware?: number; alpha: number;
   drivers: string[]; influence: InfluenceItem[]; clusters: ClusterMeta[];
-  provenance: string[]; markdownReport: string;
+  provenance: string[]; markdownReport: string; detailedReport?: string;
 }): ForecastCard {
   const maxDelta = params.influence.reduce((m, x) => Math.max(m, x.deltaPP || 0), 0);
   const audit = {
@@ -26,6 +26,7 @@ export function makeForecastCard(params: {
     clusters: params.clusters,
     audit,
     provenance: params.provenance,
-    markdownReport: params.markdownReport
+    markdownReport: params.markdownReport,
+    detailedReport: params.detailedReport
   };
 }
